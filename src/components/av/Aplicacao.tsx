@@ -8,6 +8,7 @@ import type { AreaMapa, RespostaMapa } from "@/lib/tse/mapa";
 import type { RespostaPrimeiroTurno } from "@/lib/tse/primeiroTurno";
 import { Anuncio, Busca, Cabecalho, LinhaDoTempo } from "./Cabecalho";
 import { Compartilhar } from "./Compartilhar";
+import { FaleConosco } from "./FaleConosco";
 import { IconeApp } from "./IconesApps";
 import { Boletim, Presenca, ResumoBoletim, textoWhatsapp, viradas } from "./Exclusivos";
 import { useAgora, useHash, useHistorico, useJsonPeriodico, usePreferencia, usePresenca } from "./hooks";
@@ -356,6 +357,7 @@ export function Aplicacao() {
           · mapas IBGE e Natural Earth · confira sempre no TSE
         </span>
       </footer>
+      <FaleConosco />
       <Compartilhar aberta={compartilhando} aoFechar={() => setCompartilhando(false)} resultado={resultado} />
       <Busca
         aberta={busca}

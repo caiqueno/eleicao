@@ -246,3 +246,16 @@ test("plano de governo: link no mesmo formato para os dois candidatos", async ({
   await expect(planos).toHaveCount(2);
   for (const i of [0, 1]) await expect(planos.nth(i)).toContainText("Plano de governo");
 });
+
+test("fale com a gente: manda mensagem com e-mail e aceite", async ({ page }) => {
+  const { chamadas } = await abrir(page, DURANTE, true);
+  await page.getByTestId("fale-botao").click();
+  const caixa = page.getByTestId("fale-caixa");
+  await expect(caixa).toContainText("Só a equipe do acompanhevotos lê");
+  await caixa.getByLabel("Mensagem", { exact: true }).fill("Gostei do mapa");
+  await caixa.getByLabel("Seu e-mail").fill("pessoa@exemplo.com");
+  await caixa.getByLabel(/Concordo/).check();
+  await page.getByTestId("fale-enviar").click();
+  await expect(page.getByTestId("fale-ok")).toBeVisible();
+  expect(chamadas).toContain("/api/mensagem");
+});
