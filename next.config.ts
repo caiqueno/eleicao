@@ -14,8 +14,19 @@ const CSP = [
   "object-src 'none'",
 ].join("; ");
 
+/** Endereços antigos da Vercel que passam a levar ao domínio oficial (mantendo caminho e parâmetros). */
+const HOSTS_ANTIGOS = ["acompanhevotos.vercel.app", "wwwacompanhevotos.vercel.app"];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  async redirects() {
+    return HOSTS_ANTIGOS.map((host) => ({
+      source: "/:caminho*",
+      has: [{ type: "host" as const, value: host }],
+      destination: "https://www.acompanhevotos.com.br/:caminho*",
+      permanent: true,
+    }));
+  },
   async headers() {
     return [
       {
