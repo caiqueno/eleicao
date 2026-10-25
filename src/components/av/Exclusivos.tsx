@@ -4,11 +4,26 @@ import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import type { AreaMapa } from "@/lib/tse/mapa";
 import type { PrimeiroTurnoArea } from "@/lib/tse/primeiroTurno";
 import { UFS } from "@/config/eleicao";
+import { Seguir } from "./Cabecalho";
 import { IconeApp } from "./IconesApps";
-import { capitalizar, compacto, horaBrasilia, INICIO_DIVULGACAO_MS, inteiro, nomeCurto, parcelas, pct2, relogio, type CandidatoBase } from "./util";
+import {
+  capitalizar,
+  compacto,
+  horaBrasilia,
+  INICIO_DIVULGACAO_MS,
+  inteiro,
+  nomeCurto,
+  parcelas,
+  pct2,
+  relogio,
+  type CandidatoBase,
+} from "./util";
 
 /** Quem está à frente em cada área com votos (índice 0 ou 1), sem empates. */
-export function liderancas(areas: AreaMapa[], numeros: string[]): [number, number] {
+export function liderancas(
+  areas: AreaMapa[],
+  numeros: string[],
+): [number, number] {
   const n: [number, number] = [0, 0];
   for (const a of areas) {
     if ((a.secoesTotalizadas ?? 0) === 0 || !a.votos) continue;
@@ -29,7 +44,11 @@ export interface Virada {
 }
 
 /** Áreas em que o líder entre os dois mudou do 1º turno (final) para a apuração atual do 2º. */
-export function viradas(areas: AreaMapa[], pt: PrimeiroTurnoArea[], numeros: string[]): Virada[] {
+export function viradas(
+  areas: AreaMapa[],
+  pt: PrimeiroTurnoArea[],
+  numeros: string[],
+): Virada[] {
   return areas.flatMap((a) => {
     if ((a.secoesTotalizadas ?? 0) === 0) return [];
     const agoraP = parcelas(a.votos, numeros);
@@ -37,24 +56,63 @@ export function viradas(areas: AreaMapa[], pt: PrimeiroTurnoArea[], numeros: str
     if (!agoraP || !antesP || agoraP[0] === 50 || antesP[0] === 50) return [];
     const antes = antesP[0] > 50 ? 0 : 1;
     const agora = agoraP[0] > 50 ? 0 : 1;
-    return antes === agora ? [] : [{ cd: a.cd, nome: UFS[a.cd] ?? capitalizar(a.nome), antes, agora }];
+    return antes === agora
+      ? []
+      : [{ cd: a.cd, nome: UFS[a.cd] ?? capitalizar(a.nome), antes, agora }];
   });
 }
 
 /** Texto para mandar no WhatsApp: só números oficiais do TSE, com a hora e o percentual apurado. */
-export function textoWhatsapp(r: ResultadoSegundoTurno | null, agora: number, url: string): string {
+export function textoWhatsapp(
+  r: ResultadoSegundoTurno | null,
+  agora: number,
+  url: string,
+): string {
   if (!r) return `Acompanhe o 2º turno com os dados oficiais do TSE: ${url}`;
   const t = r.totalizacao;
-  const cargo = r.cargo === "presidente" ? "Presidente" : `Governador · ${r.abrangenciaNome}`;
+  const cargo =
+    r.cargo === "presidente"
+      ? "Presidente"
+      : `Governador · ${r.abrangenciaNome}`;
   if ((t.secoesTotalizadas ?? 0) === 0) {
-    const quando = agora && agora < INICIO_DIVULGACAO_MS ? `começa em ${relogio(INICIO_DIVULGACAO_MS - agora)}` : "aguardando os primeiros números";
+    const quando =
+      agora && agora < INICIO_DIVULGACAO_MS
+        ? `começa em ${relogio(INICIO_DIVULGACAO_MS - agora)}`
+        : "aguardando os primeiros números";
     return `2º turno · ${cargo}: a apuração ${quando}. Acompanhe com os dados oficiais do TSE: ${url}`;
   }
-  const cands = [...r.candidatos].sort((a, b) => Number(a.numero) - Number(b.numero));
-  const p = parcelas(Object.fromEntries(cands.map((c) => [c.numero, c.votos ?? 0])), cands.map((c) => c.numero));
-  const linha = cands.map((c, i) => `${nomeCurto(c.nome)} ${pct2(c.percentualFonte ?? p?.[i])}`).join(" × ");
-  const hora = t.atualizadoEmFonte ? ` (TSE, ${horaBrasilia(Date.parse(t.atualizadoEmFonte))})` : "";
+  const cands = [...r.candidatos].sort(
+    (a, b) => Number(a.numero) - Number(b.numero),
+  );
+  const p = parcelas(
+    Object.fromEntries(cands.map((c) => [c.numero, c.votos ?? 0])),
+    cands.map((c) => c.numero),
+  );
+  const linha = cands
+    .map((c, i) => `${nomeCurto(c.nome)} ${pct2(c.percentualFonte ?? p?.[i])}`)
+    .join(" × ");
+  const hora = t.atualizadoEmFonte
+    ? ` (TSE, ${horaBrasilia(Date.parse(t.atualizadoEmFonte))})`
+    : "";
   return `2º turno · ${cargo} · ${pct2(t.percentualSecoesTotalizadas)} das seções apuradas: ${linha}${hora}. Resultado parcial. Acompanhe: ${url}`;
+}
+
+/** Diferença em votos entre os dois e índice de quem está à frente (null antes dos votos ou em empate). */
+export function diferencaEntre(
+  r: ResultadoSegundoTurno | null,
+  candidatos: CandidatoBase[],
+): { diferenca: number | null; frente: number | null } {
+  if (!r || (r.totalizacao.secoesTotalizadas ?? 0) === 0)
+    return { diferenca: null, frente: null };
+  const votos = Object.fromEntries(
+    r.candidatos.map((c) => [c.numero, c.votos ?? 0]),
+  );
+  const [va, vb] = candidatos.map((c) => votos[c.numero] ?? 0);
+  const diferenca = Math.abs((va ?? 0) - (vb ?? 0));
+  return {
+    diferenca,
+    frente: diferenca ? ((va ?? 0) > (vb ?? 0) ? 0 : 1) : null,
+  };
 }
 
 interface PropsBoletim {
@@ -76,18 +134,25 @@ export function Boletim(p: PropsBoletim) {
   const r = p.resultado;
   const t = r?.totalizacao;
   const apurando = (t?.secoesTotalizadas ?? 0) > 0;
-  const votos = r ? Object.fromEntries(r.candidatos.map((c) => [c.numero, c.votos ?? 0])) : {};
-  const [na, nb] = p.candidatos.map((c) => c.numero);
-  const diferenca = apurando ? Math.abs((votos[na] ?? 0) - (votos[nb] ?? 0)) : null;
-  const frente = apurando && diferenca ? ((votos[na] ?? 0) > (votos[nb] ?? 0) ? 0 : 1) : null;
-  const lid = liderancas(p.areas, [na, nb]);
+  const { diferenca, frente } = diferencaEntre(r, p.candidatos);
+  const lid = liderancas(
+    p.areas,
+    p.candidatos.map((c) => c.numero),
+  );
   const antes = p.agora > 0 && p.agora < INICIO_DIVULGACAO_MS;
 
   return (
-    <section className="boletim" data-testid="boletim" aria-label="Boletim do momento">
+    <section
+      className="boletim"
+      id="boletim"
+      data-testid="boletim"
+      aria-label="Boletim do momento"
+    >
       <header className="boletim__cab">
         <span className="boletim__selo">BOLETIM</span>
-        <span className="boletim__hora">{p.agora ? horaBrasilia(p.agora) : "--:--"}</span>
+        <span className="boletim__hora">
+          {p.agora ? horaBrasilia(p.agora) : "--:--"}
+        </span>
       </header>
       <dl className="boletim__linhas">
         <div>
@@ -98,17 +163,32 @@ export function Boletim(p: PropsBoletim) {
           <dt>Diferença</dt>
           <dd>
             {diferenca === null ? (
-              antes ? `começa em ${relogio(INICIO_DIVULGACAO_MS - p.agora)}` : "—"
+              antes ? (
+                `começa em ${relogio(INICIO_DIVULGACAO_MS - p.agora)}`
+              ) : (
+                "—"
+              )
             ) : (
               <>
-                <span style={{ color: frente === null ? undefined : p.cores[frente] }}>{inteiro(diferenca)}</span> votos
+                <span
+                  style={{
+                    color: frente === null ? undefined : p.cores[frente],
+                  }}
+                >
+                  {inteiro(diferenca)}
+                </span>{" "}
+                votos
               </>
             )}
           </dd>
         </div>
         <div>
           <dt>Eleitores que faltam</dt>
-          <dd>{compacto(r?.votos.eleitoradoFaltando ?? r?.votos.eleitorado ?? null)}</dd>
+          <dd>
+            {compacto(
+              r?.votos.eleitoradoFaltando ?? r?.votos.eleitorado ?? null,
+            )}
+          </dd>
         </div>
         {apurando && r && r.votos.brancos !== null && r.votos.nulos !== null ? (
           <div>
@@ -127,49 +207,146 @@ export function Boletim(p: PropsBoletim) {
             <b>{lid[i]}</b>
           </li>
         ))}
-        <li className="boletim__lidTotal">de {p.areas.length} {p.nomeAreas}</li>
+        <li className="boletim__lidTotal">
+          de {p.areas.length} {p.nomeAreas}
+        </li>
       </ul>
       {p.viradas && (
         <>
           <h4 className="boletim__rotulo">Viradas desde o 1º turno</h4>
           {p.viradas.length === 0 ? (
-            <p className="boletim__vazio">{apurando ? "Nenhum estado mudou de lado até agora." : "Aparece quando os votos chegarem."}</p>
+            <p className="boletim__vazio">
+              {apurando
+                ? "Nenhum estado mudou de lado até agora."
+                : "Aparece quando os votos chegarem."}
+            </p>
           ) : (
             <ul className="boletim__viradas" data-testid="viradas">
               {p.viradas.slice(0, 6).map((v) => (
                 <li key={v.cd}>
                   <span>{v.nome}</span>
                   <span>
-                    <i style={{ background: p.cores[v.antes] }} /> → <i style={{ background: p.cores[v.agora] }} />{" "}
+                    <i style={{ background: p.cores[v.antes] }} /> →{" "}
+                    <i style={{ background: p.cores[v.agora] }} />{" "}
                     {nomeCurto(p.candidatos[v.agora]?.nome ?? "")}
                   </span>
                 </li>
               ))}
-              {p.viradas.length > 6 && <li className="boletim__lidTotal">e mais {p.viradas.length - 6}</li>}
+              {p.viradas.length > 6 && (
+                <li className="boletim__lidTotal">
+                  e mais {p.viradas.length - 6}
+                </li>
+              )}
             </ul>
           )}
         </>
       )}
-      <button type="button" className="boletim__whats" onClick={p.aoWhatsapp} data-testid="mandar-whatsapp">
+      <button
+        type="button"
+        className="boletim__whats"
+        onClick={p.aoWhatsapp}
+        data-testid="mandar-whatsapp"
+      >
         <IconeApp app="whatsapp" tam={20} /> Mandar no WhatsApp
       </button>
-      <p className="boletim__nota">“À frente” e “virada” usam só os votos já apurados pelo TSE e podem mudar. Não é resultado final.</p>
+      <Seguir className="boletim__seguir" />
+      <p className="boletim__nota">
+        “À frente” e “virada” usam só os votos já apurados pelo TSE e podem
+        mudar. Não é resultado final.
+      </p>
     </section>
   );
 }
 
+interface PropsResumo {
+  resultado: ResultadoSegundoTurno | null;
+  candidatos: CandidatoBase[];
+  cores: string[];
+  areas: AreaMapa[];
+  nomeAreas: string;
+}
+
+/**
+ * Resumo do boletim logo abaixo do placar, só no celular (no desktop o boletim
+ * já aparece ao lado do mapa): diferença em votos e onde cada um está à frente.
+ */
+export function ResumoBoletim(p: PropsResumo) {
+  const { diferenca, frente } = diferencaEntre(p.resultado, p.candidatos);
+  if (diferenca === null || p.candidatos.length !== 2) return null;
+  const lid = liderancas(
+    p.areas,
+    p.candidatos.map((c) => c.numero),
+  );
+  return (
+    <a
+      className="resumo-boletim"
+      href="#boletim"
+      data-testid="resumo-boletim"
+      onClick={(e) => {
+        e.preventDefault();
+        document
+          .getElementById("boletim")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }}
+    >
+      <span className="resumo-boletim__linha">
+        Diferença{" "}
+        <b style={{ color: frente === null ? undefined : p.cores[frente] }}>
+          {inteiro(diferenca)}
+        </b>{" "}
+        votos
+      </span>
+      {p.areas.length > 0 && (
+        <span className="resumo-boletim__linha">
+          À frente em{" "}
+          {p.candidatos.map((c, i) => (
+            <span key={c.numero}>
+              {i > 0 && " · "}
+              <i style={{ background: p.cores[i] }} /> {nomeCurto(c.nome)}{" "}
+              <b>{lid[i]}</b>
+            </span>
+          ))}{" "}
+          de {p.areas.length} {p.nomeAreas}
+        </span>
+      )}
+      <span className="resumo-boletim__ver">Ver boletim ↓</span>
+    </a>
+  );
+}
+
 /** Pessoas com a página aberta agora e aparelhos diferentes hoje (só aparece quando o contador está configurado). */
-export function Presenca({ agora, hoje }: { agora: number | null; hoje: number | null }) {
+export function Presenca({
+  agora,
+  hoje,
+}: {
+  agora: number | null;
+  hoje: number | null;
+}) {
   if (agora === null) return null;
   return (
-    <div className="presenca" data-testid="presenca" role="status" aria-live="off">
-      <span className="presenca__agora" title="Aparelhos com esta página aberta nos últimos 100 segundos">
+    <div
+      className="presenca"
+      data-testid="presenca"
+      role="status"
+      aria-live="off"
+    >
+      <span
+        className="presenca__agora"
+        title="Aparelhos com esta página aberta nos últimos 100 segundos"
+      >
         <span className="presenca__ponto" aria-hidden="true" />
         <b data-testid="presenca-agora">{inteiro(agora)}</b>{" "}
-        <span>{agora === 1 ? "pessoa acompanhando agora" : "pessoas acompanhando agora"}</span>
+        <span>
+          {agora === 1
+            ? "pessoa acompanhando agora"
+            : "pessoas acompanhando agora"}
+        </span>
       </span>
       {hoje !== null && (
-        <span className="presenca__hoje" title="Aparelhos diferentes que abriram o site hoje (horário de Brasília)">
+        <span
+          className="presenca__hoje"
+          title="Aparelhos diferentes que abriram o site hoje (horário de Brasília)"
+        >
           <b data-testid="presenca-hoje">{inteiro(hoje)}</b> hoje
         </span>
       )}

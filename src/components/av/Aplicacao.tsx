@@ -8,7 +8,7 @@ import type { AreaMapa, RespostaMapa } from "@/lib/tse/mapa";
 import type { RespostaPrimeiroTurno } from "@/lib/tse/primeiroTurno";
 import { Anuncio, Busca, Cabecalho, LinhaDoTempo, Seguir } from "./Cabecalho";
 import { Compartilhar } from "./Compartilhar";
-import { Boletim, Presenca, textoWhatsapp, viradas } from "./Exclusivos";
+import { Boletim, Presenca, ResumoBoletim, textoWhatsapp, viradas } from "./Exclusivos";
 import { useAgora, useHash, useHistorico, useJsonPeriodico, usePreferencia, usePresenca } from "./hooks";
 import { PainelDetalhe, PainelProjecao, projetar } from "./Laterais";
 import { Mapa, type Vista } from "./Mapa";
@@ -247,7 +247,10 @@ export function Aplicacao() {
           {govBr ? (
             <PlacarGovernadores areas={mapaBr.dados?.areas ?? []} aoEscolher={(u) => irPara({ uf: u, mun: null })} agora={agora} />
           ) : (
-            <Placar cargo={cargo} uf={ufTopo} resultado={resultado} agora={agora} carregando={res.carregando} />
+            <>
+              <Placar cargo={cargo} uf={ufTopo} resultado={resultado} agora={agora} carregando={res.carregando} />
+              <ResumoBoletim resultado={resultado} candidatos={candidatos} cores={cores} areas={areasMapa ?? []} nomeAreas={nomeFilhas} />
+            </>
           )}
           {res.desatualizado && <p className="alerta">Dados podem estar desatualizados: sem resposta nova do TSE há alguns minutos.</p>}
         </div>

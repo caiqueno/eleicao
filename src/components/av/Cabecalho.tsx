@@ -81,9 +81,9 @@ export function Anuncio({ compacto = false }: { compacto?: boolean }) {
 }
 
 /** Convite para acompanhar a próxima eleição. O destino fica em src/config/contato.ts. */
-export function Seguir() {
+export function Seguir({ className }: { className?: string }) {
   return (
-    <a className="seguir" href={SEGUIR_URL} target="_blank" rel="noopener noreferrer" data-testid="seguir">
+    <a className={`seguir${className ? ` ${className}` : ""}`} href={SEGUIR_URL} target="_blank" rel="noopener noreferrer" data-testid="seguir">
       <Icone nome="whats" /> Siga para a próxima eleição
     </a>
   );
