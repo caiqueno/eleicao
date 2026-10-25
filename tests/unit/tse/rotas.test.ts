@@ -50,7 +50,7 @@ describe("GET /api/resultados", () => {
     vi.stubGlobal("fetch", f);
     const res = await getResultados(req(""));
     expect(res.status).toBe(200);
-    expect(res.headers.get("cache-control")).toContain("s-maxage=5");
+    expect(res.headers.get("cache-control")).toContain("s-maxage=10");
     const corpo = await res.json();
     expect(corpo.estado).toBe("ok");
     expect(corpo.resultado.abrangencia).toBe("br");
