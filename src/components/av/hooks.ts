@@ -247,8 +247,15 @@ function idDoNavegador(): string {
   return id;
 }
 
-export function usePresenca(intervaloS = 45): number | null {
-  const [agora, setAgora] = useState<number | null>(null);
+export interface ContagemPresenca {
+  agora: number | null;
+  hoje: number | null;
+}
+
+const numero = (n: unknown) => (typeof n === "number" && Number.isFinite(n) && n >= 0 ? n : null);
+
+export function usePresenca(intervaloS = 45): ContagemPresenca {
+  const [contagem, setContagem] = useState<ContagemPresenca>({ agora: null, hoje: null });
   useEffect(() => {
     const id = idDoNavegador();
     let vivo = true;
@@ -263,8 +270,8 @@ export function usePresenca(intervaloS = 45): number | null {
             body: JSON.stringify({ id }),
             cache: "no-store",
           });
-          const j = (await r.json()) as { agora?: number | null };
-          if (vivo && r.ok) setAgora(typeof j.agora === "number" ? j.agora : null);
+          const j = (await r.json()) as { agora?: unknown; hoje?: unknown };
+          if (vivo && r.ok) setContagem({ agora: numero(j.agora), hoje: numero(j.hoje) });
         } catch {
           /* sem conexão: mantém o último número */
         }
@@ -280,5 +287,5 @@ export function usePresenca(intervaloS = 45): number | null {
       document.removeEventListener("visibilitychange", aoVoltar);
     };
   }, [intervaloS]);
-  return agora;
+  return contagem;
 }

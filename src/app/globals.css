@@ -1399,22 +1399,38 @@ a {
 .presenca {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 10px;
+  padding: 7px 14px;
   border-radius: 999px;
-  border: 1px solid var(--borda);
-  background: var(--painel);
-  font-size: 12.5px;
-  color: var(--suave);
+  border: 1.5px solid var(--verde);
+  background: color-mix(in srgb, var(--verde) 12%, var(--painel));
+  font-size: 13px;
+  color: var(--texto);
   white-space: nowrap;
 }
-.presenca b {
+.presenca__agora {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+}
+.presenca__agora b {
+  font-size: 19px;
+  line-height: 1;
+}
+.presenca__hoje {
+  padding-left: 10px;
+  border-left: 1px solid var(--borda);
+  color: var(--suave);
+}
+.presenca__hoje b {
   color: var(--texto);
-  font-size: 13.5px;
+  font-size: 14.5px;
 }
 .presenca__ponto {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--verde);
   box-shadow: 0 0 0 0 var(--verde);

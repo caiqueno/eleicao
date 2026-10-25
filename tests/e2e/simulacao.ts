@@ -148,7 +148,7 @@ export function primeiroTurno() {
 }
 
 /** Intercepta todas as rotas /api/* com a simulação. */
-export async function simularApi(page: Page, apurando: boolean, pessoas: number | null = 1234) {
+export async function simularApi(page: Page, apurando: boolean, pessoas: number | null = 1234, hoje: number | null = 56789) {
   const chamadas: string[] = [];
   await page.route("**/api/**", (rota) => {
     const url = new URL(rota.request().url());
@@ -164,7 +164,7 @@ export async function simularApi(page: Page, apurando: boolean, pessoas: number 
     }
     if (url.pathname === "/api/primeiro-turno") return rota.fulfill({ json: primeiroTurno() });
     if (url.pathname === "/api/municipios") return rota.fulfill({ json: { municipios: [["sp", "10000", "3500105", "ADAMANTINA"], ["ba", "10001", "2900108", "ABAÍRA"]] } });
-    if (url.pathname === "/api/presenca") return rota.fulfill({ json: { agora: pessoas } });
+    if (url.pathname === "/api/presenca") return rota.fulfill({ json: { agora: pessoas, hoje: pessoas === null ? null : hoje } });
     if (url.pathname === "/api/foto") return rota.fulfill({ status: 404, body: "" });
     return rota.fulfill({ status: 404, json: { erro: "não simulado" } });
   });
