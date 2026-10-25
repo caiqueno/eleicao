@@ -39,8 +39,37 @@ export interface OpcoesBusca {
   fetchImpl?: typeof fetch;
 }
 
+/**
+ * Limite de requisições simultâneas ao TSE por instância. Com arquivos de
+ * dezenas de KB isso fica bem abaixo de 100 req/s, o limite que o TSE pune
+ * com bloqueio de 10 minutos.
+ */
+export const MAXIMO_SIMULTANEAS = 6;
+let emUso = 0;
+const fila: (() => void)[] = [];
+
+async function comVaga<T>(tarefa: () => Promise<T>): Promise<T> {
+  if (emUso >= MAXIMO_SIMULTANEAS) await new Promise<void>((liberar) => fila.push(liberar));
+  emUso++;
+  try {
+    return await tarefa();
+  } finally {
+    emUso--;
+    fila.shift()?.();
+  }
+}
+
 /** Busca texto de um arquivo do TSE com tempo limite e erros tipados. */
-export async function buscarTexto(url: string, opcoes: OpcoesBusca = {}): Promise<string> {
+export function buscarTexto(url: string, opcoes: OpcoesBusca = {}): Promise<string> {
+  return comVaga(() => buscar(url, opcoes, "texto")) as Promise<string>;
+}
+
+/** Busca um arquivo binário do TSE (fotos oficiais), com as mesmas regras. */
+export function buscarBytes(url: string, opcoes: OpcoesBusca = {}): Promise<ArrayBuffer> {
+  return comVaga(() => buscar(url, opcoes, "bytes")) as Promise<ArrayBuffer>;
+}
+
+async function buscar(url: string, opcoes: OpcoesBusca, formato: "texto" | "bytes"): Promise<string | ArrayBuffer> {
   const destino = new URL(url);
   if (destino.host !== HOST_PERMITIDO || destino.protocol !== "https:") {
     throw new Error("Destino não permitido");
@@ -69,6 +98,11 @@ export async function buscarTexto(url: string, opcoes: OpcoesBusca = {}): Promis
   }
   const tamanho = Number(resposta.headers.get("content-length") ?? 0);
   if (tamanho > TAMANHO_MAXIMO) throw new ErroFonte("Arquivo do TSE maior que o esperado", "formato");
+  if (formato === "bytes") {
+    const bytes = await resposta.arrayBuffer();
+    if (bytes.byteLength > TAMANHO_MAXIMO) throw new ErroFonte("Arquivo do TSE maior que o esperado", "formato");
+    return bytes;
+  }
   const texto = await resposta.text();
   if (texto.length > TAMANHO_MAXIMO) throw new ErroFonte("Arquivo do TSE maior que o esperado", "formato");
   return texto;

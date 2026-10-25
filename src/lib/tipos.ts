@@ -20,6 +20,8 @@ export interface CandidatoResultado {
   /** Situação oficial (ex.: "Eleito"), só quando informada pela fonte. */
   situacao: string | null;
   eleito: boolean;
+  /** Sequencial do candidato no TSE (usado para a foto oficial). */
+  sqcand: string | null;
 }
 
 export interface Totalizacao {
@@ -35,6 +37,10 @@ export interface Totalizacao {
 
 export interface VotosGerais {
   eleitorado: number | null;
+  /** Eleitores das seções já totalizadas (e.est). */
+  eleitoradoApurado: number | null;
+  /** Eleitores das seções ainda não totalizadas (e.esnt). */
+  eleitoradoFaltando: number | null;
   comparecimento: number | null;
   abstencao: number | null;
   validos: number | null;

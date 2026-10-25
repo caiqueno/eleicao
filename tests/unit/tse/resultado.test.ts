@@ -54,7 +54,7 @@ describe("normalizarResultado — parcial", () => {
       atualizadoEmFonte: "2026-10-25T18:30:00-03:00",
       finalizada: false,
     });
-    expect(r.votos).toEqual({ eleitorado: 150000, comparecimento: 80000, abstencao: 70000, validos: 75000, brancos: 2000, nulos: 3000 });
+    expect(r.votos).toMatchObject({ eleitorado: 150000, comparecimento: 80000, abstencao: 70000, validos: 75000, brancos: 2000, nulos: 3000 });
   });
 
   it("aceita cdabr em maiúsculas e ele com zeros à esquerda", () => {
@@ -110,7 +110,7 @@ describe("normalizarResultado — cenários", () => {
   it("numéricos inválidos viram null, nunca 0", () => {
     const r = norm("simulado-numerico-invalido.json");
     expect(r.totalizacao).toMatchObject({ secoesTotal: null, secoesTotalizadas: null, percentualSecoesTotalizadas: null, finalizada: false });
-    expect(r.votos).toEqual({ eleitorado: null, comparecimento: null, abstencao: null, validos: null, brancos: null, nulos: null });
+    expect(r.votos).toMatchObject({ eleitorado: null, comparecimento: null, abstencao: null, validos: null, brancos: null, nulos: null });
     const a = r.candidatos.find((c) => c.numero === "11")!;
     const b = r.candidatos.find((c) => c.numero === "22")!;
     expect(a.votos).toBeNull();

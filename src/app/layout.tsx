@@ -3,11 +3,11 @@ import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Acompanhe Votos · 2º turno 2026",
+  title: "acompanhevotos · 2º turno 2026",
   description:
     "Acompanhe o 2º turno das Eleições Gerais 2026 para Presidente e Governador com dados oficiais do Tribunal Superior Eleitoral (TSE).",
-  applicationName: "Acompanhe Votos",
-  appleWebApp: { capable: true, title: "Acompanhe Votos", statusBarStyle: "default" },
+  applicationName: "acompanhevotos",
+  appleWebApp: { capable: true, title: "acompanhevotos", statusBarStyle: "black-translucent" },
   formatDetection: { telephone: false },
 };
 
@@ -15,16 +15,13 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f7f9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1116" },
-  ],
+  colorScheme: "dark light",
+  themeColor: "#0b0b0b",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-theme="dark">
       <body>
         <a className="pular" href="#conteudo">
           Pular para o conteúdo
