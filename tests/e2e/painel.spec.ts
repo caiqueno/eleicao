@@ -86,9 +86,14 @@ test("patrocínio: oferta clara, sem preço inventado, abre o WhatsApp em nova a
   await expect(link).toHaveAttribute("rel", /noopener/);
   await expect(link).toContainText("Espaço de patrocínio nesta página de apuração");
   await expect(link).not.toContainText("valor a combinar");
-  // Nada entre o topo e o placar: o patrocínio fica no rodapé.
-  await expect(page.locator(".rodape").getByTestId("anuncio-whatsapp")).toHaveCount(1);
-  await expect(page.locator(".topo").getByTestId("anuncio-whatsapp")).toHaveCount(0);
+  await expect(link).toContainText("Clique aqui");
+  // Patrocínio em cima, antes do placar, numa faixa baixa.
+  await expect(page.getByTestId("anuncio-whatsapp")).toHaveCount(1);
+  await expect(page.locator(".rodape").getByTestId("anuncio-whatsapp")).toHaveCount(0);
+  const caixa = (await link.boundingBox())!;
+  expect(caixa.y).toBeLessThan((await page.getByTestId("placar").boundingBox())!.y);
+  expect(caixa.height).toBeLessThanOrEqual(48);
+  await expect(page.getByTestId("candidato").first()).toBeInViewport();
 });
 
 test("aviso da próxima eleição: um botão só, abre o contato em nova aba", async ({ page }) => {
@@ -233,4 +238,11 @@ test("celular: WhatsApp e busca logo abaixo do placar, sem repetir o placar no p
     await expect(whats).toBeHidden();
     await expect(repetido).toBeVisible();
   }
+});
+
+test("plano de governo: link no mesmo formato para os dois candidatos", async ({ page }) => {
+  await abrir(page, DURANTE, true);
+  const planos = page.getByTestId("candidato").getByTestId("plano-governo");
+  await expect(planos).toHaveCount(2);
+  for (const i of [0, 1]) await expect(planos.nth(i)).toContainText("Plano de governo");
 });

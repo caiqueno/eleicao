@@ -240,6 +240,9 @@ export function Aplicacao() {
         aviso={aviso}
         presenca={<Presenca agora={pessoas.agora} hoje={pessoas.hoje} />}
       />
+      <div className="faixa-anuncio">
+        <Anuncio compacto />
+      </div>
       <main id="conteudo" className="corpo">
         <div className="area-placar">
           {govBr ? (
@@ -342,7 +345,6 @@ export function Aplicacao() {
         )}
       </main>
       <footer className="rodape">
-        <Anuncio />
         <span>
           <b>acompanhevotos</b> · feito por caiqueno
         </span>
