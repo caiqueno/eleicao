@@ -260,22 +260,34 @@ test("fale com a gente: manda mensagem com e-mail e aceite", async ({ page }) =>
   expect(chamadas).toContain("/api/mensagem");
 });
 
-test("chat: regras visíveis, texto sem HTML, comentar e denunciar", async ({ page }) => {
+test("bate-papo: aba estilo MSN abre a janela, regras visíveis, texto sem HTML, enviar e denunciar", async ({ page }) => {
   const { erros, chamadas } = await abrir(page, DURANTE, true);
+  const aba = page.getByTestId("chat-aba");
+  await expect(aba).toBeVisible();
+  await expect(aba).toContainText("1.234 online");
+  await expect(page.getByTestId("chat-novas")).toHaveText("1");
+  await aba.click();
   const chat = page.getByTestId("chat");
-  await chat.scrollIntoViewIfNeeded();
   await expect(page.getByTestId("chat-regras")).toContainText("não do acompanhevotos nem do TSE");
   await expect(page.getByTestId("chat-regras")).toContainText("não apoia nenhum candidato");
+  await chat.getByRole("button", { name: "Regras" }).click();
+  await expect(page.getByTestId("chat-regras")).toContainText("Não são permitidos pedido de voto");
   const lista = page.getByTestId("chat-lista");
   await expect(lista).toContainText("<b>apuração</b> andando rápido");
   await expect(lista.locator("b", { hasText: /^apuração$/ })).toHaveCount(0);
+  await page.getByTestId("chat-apelido").click();
   await chat.getByLabel("Apelido (opcional)").fill("Bia");
-  await chat.getByLabel("Comentário").fill("Acompanhando daqui de Salvador");
-  await page.getByTestId("chat-enviar").click();
-  await expect(lista.locator("li").first()).toContainText("Acompanhando daqui de Salvador");
-  await expect(lista.locator("li").first()).toContainText("Bia");
-  await lista.locator("li").nth(1).getByRole("button", { name: "Denunciar" }).click();
-  await expect(lista.locator("li").nth(1).getByRole("button", { name: "Denunciado" })).toBeDisabled();
+  await chat.getByLabel("Mensagem do bate-papo").fill("Acompanhando daqui de Salvador");
+  await chat.getByLabel("Mensagem do bate-papo").press("Enter");
+  const msgs = page.getByTestId("chat-msg");
+  await expect(msgs.last()).toContainText("Acompanhando daqui de Salvador");
+  await expect(msgs.last()).toContainText("Você");
+  await expect(msgs.last()).toHaveClass(/chat-msg--meu/);
+  await msgs.first().getByRole("button", { name: "Denunciar" }).click();
+  await expect(msgs.first().getByRole("button", { name: "Denunciado" })).toBeDisabled();
   expect(chamadas).toContain("/api/chat/denuncia");
+  await page.getByTestId("chat-minimizar").click();
+  await expect(page.getByTestId("chat-aba")).toBeVisible();
+  await expect(page.getByTestId("chat-novas")).toHaveCount(0);
   expect(erros).toEqual([]);
 });
