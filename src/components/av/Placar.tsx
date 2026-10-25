@@ -101,16 +101,22 @@ export function Placar({ cargo, uf, resultado, agora, carregando }: Props) {
         </div>
       </div>
       <p className="placar__rodape">
-        <span className="placar__apurado" data-testid="secoes-totalizadas">
-          <b>{pct1(t.percentualSecoesTotalizadas ?? 0).replace(",0%", "%")}</b> apurado
-        </span>
-        {resultado.votos.eleitoradoFaltando !== null && <span> · faltam {compacto(resultado.votos.eleitoradoFaltando)} de eleitores</span>}
-        {t.atualizadoEmFonte && (
-          <span className="placar__fonte" data-testid="atualizado-fonte">
-            {" "}
-            · atualizado pelo TSE em {formatarDataHora(t.atualizadoEmFonte)}
-          </span>
-        )}
+        {/* O percentual de seções apuradas aparece uma vez só: no título durante a apuração, aqui quando ela termina. */}
+        {[
+          t.finalizada && (
+            <span key="apurado" className="placar__apurado" data-testid="secoes-totalizadas">
+              <b>{pct2(t.percentualSecoesTotalizadas)}</b> das seções apuradas
+            </span>
+          ),
+          resultado.votos.eleitoradoFaltando !== null && <span key="faltam">faltam {compacto(resultado.votos.eleitoradoFaltando)} de eleitores</span>,
+          t.atualizadoEmFonte && (
+            <span key="fonte" className="placar__fonte" data-testid="atualizado-fonte">
+              atualizado pelo TSE em {formatarDataHora(t.atualizadoEmFonte)}
+            </span>
+          ),
+        ]
+          .filter(Boolean)
+          .flatMap((parte, n) => (n ? [" · ", parte] : [parte]))}
       </p>
     </section>
   );

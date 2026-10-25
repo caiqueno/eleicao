@@ -192,6 +192,41 @@ a {
   text-decoration: underline;
 }
 
+.busca-topo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--marca);
+  background: var(--painel);
+  color: var(--texto);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.busca-topo:hover {
+  background: var(--marca);
+  color: var(--marca-tinta);
+}
+.seguir {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: #25d366;
+  color: #0b1220;
+  font-weight: 700;
+  text-decoration: none;
+}
+.seguir:hover {
+  filter: brightness(1.08);
+}
+
 .icones {
   display: flex;
   gap: 8px;
@@ -231,6 +266,17 @@ a {
 
 .faixa-anuncio {
   display: none;
+}
+/* Com contador, busca e patrocínio, o topo só cabe numa linha em telas bem largas. */
+@media (max-width: 1500px) {
+  .topo__anuncio {
+    display: none;
+  }
+  .faixa-anuncio {
+    display: flex;
+    justify-content: center;
+    padding: 0 12px 10px;
+  }
 }
 
 /* ---------------------------------------------------------------- corpo -- */
@@ -556,6 +602,11 @@ a {
 }
 .proj__nome {
   font-weight: 600;
+}
+.proj__rotulo {
+  color: var(--texto-2, inherit);
+  font-size: 11px;
+  opacity: 0.75;
 }
 
 .ponto {
@@ -1159,6 +1210,7 @@ a {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  align-items: center;
   padding: 6px 16px;
   padding-bottom: max(6px, env(safe-area-inset-bottom));
   font-size: 12px;
@@ -1193,14 +1245,6 @@ a {
   }
   .lateral--dir {
     max-height: calc(70vh + 400px);
-  }
-  .topo__anuncio {
-    display: none;
-  }
-  .faixa-anuncio {
-    display: flex;
-    justify-content: center;
-    padding: 0 12px 10px;
   }
   .icone--desk {
     display: none;

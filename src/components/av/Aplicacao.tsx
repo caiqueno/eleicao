@@ -6,7 +6,7 @@ import { useResultados } from "@/hooks/useResultados";
 import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import type { AreaMapa, RespostaMapa } from "@/lib/tse/mapa";
 import type { RespostaPrimeiroTurno } from "@/lib/tse/primeiroTurno";
-import { Anuncio, Busca, Cabecalho, LinhaDoTempo } from "./Cabecalho";
+import { Anuncio, Busca, Cabecalho, LinhaDoTempo, Seguir } from "./Cabecalho";
 import { Compartilhar } from "./Compartilhar";
 import { Boletim, Presenca, textoWhatsapp, viradas } from "./Exclusivos";
 import { useAgora, useHash, useHistorico, useJsonPeriodico, usePreferencia, usePresenca } from "./hooks";
@@ -331,6 +331,7 @@ export function Aplicacao() {
         )}
       </main>
       <footer className="rodape">
+        <Seguir />
         <span>
           <b>acompanhevotos</b> · feito por caiqueno
         </span>

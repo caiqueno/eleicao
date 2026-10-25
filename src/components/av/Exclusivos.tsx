@@ -110,10 +110,10 @@ export function Boletim(p: PropsBoletim) {
           <dt>Eleitores que faltam</dt>
           <dd>{compacto(r?.votos.eleitoradoFaltando ?? r?.votos.eleitorado ?? null)}</dd>
         </div>
-        {apurando && r?.votos.validos ? (
+        {apurando && r && r.votos.brancos !== null && r.votos.nulos !== null ? (
           <div>
             <dt>Brancos e nulos</dt>
-            <dd>{inteiro((r.votos.brancos ?? 0) + (r.votos.nulos ?? 0))}</dd>
+            <dd>{inteiro(r.votos.brancos + r.votos.nulos)}</dd>
           </div>
         ) : null}
       </dl>
