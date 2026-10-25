@@ -426,6 +426,19 @@ a.plano,
   font-size: 13px;
   color: var(--suave);
 }
+.placar__anuncio {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.12);
+  font-size: 15px;
+  text-align: center;
+}
+.placar__anuncio--eleito {
+  background: var(--verde);
+  color: #032;
+  font-weight: 700;
+}
 .placar__rodape {
   margin: 6px 0 0;
   font-size: 13px;
