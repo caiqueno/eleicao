@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { CargoId } from "@/config/eleicao";
 import { UFS } from "@/config/eleicao";
 import type { AreaMapa } from "@/lib/tse/mapa";
@@ -90,6 +90,8 @@ interface PropsProjecao {
   mudancas: { cd: string; nome: string; delta: number }[];
   primeiroTurno: number[] | null;
   atual: number[] | null;
+  /** Conteúdo exclusivo no topo da coluna (boletim do momento). */
+  topo?: ReactNode;
 }
 
 export function PainelProjecao(p: PropsProjecao) {
@@ -98,6 +100,7 @@ export function PainelProjecao(p: PropsProjecao) {
   const maxDelta = Math.max(1, ...p.mudancas.map((m) => Math.abs(m.delta)));
   return (
     <aside className="lateral lateral--esq" aria-label="Projeção e comparação com o 1º turno" data-testid="painel-projecao">
+      {p.topo}
       <section className="bloco">
         <h3 className="bloco__titulo">Projeção</h3>
         <p className="bloco__sub">Como a apuração deve terminar · estimativa do acompanhevotos, não é resultado oficial</p>

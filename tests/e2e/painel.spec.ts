@@ -100,3 +100,40 @@ test("consulta a API periodicamente sem duplicar", async ({ page }) => {
   const res = chamadas.filter((c) => c.startsWith("/api/resultados"));
   expect(res.length).toBeLessThanOrEqual(2);
 });
+
+test("contador de pessoas: aparece com número e some quando indisponível", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(DURANTE));
+  await simularApi(page, true, 1234);
+  await page.goto("/#presidente");
+  await expect(page.getByTestId("presenca")).toContainText("1.234 pessoas acompanhando");
+});
+
+test("contador de pessoas indisponível não mostra número inventado", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(DURANTE));
+  await simularApi(page, true, null);
+  await page.goto("/#presidente");
+  await expect(page.getByTestId("placar")).toBeVisible();
+  await expect(page.getByTestId("presenca")).toHaveCount(0);
+});
+
+test("boletim: diferença, viradas e texto para o WhatsApp com resultado parcial", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as unknown as { abertos: string[] }).abertos = [];
+    window.open = (u?: string | URL) => {
+      (window as unknown as { abertos: string[] }).abertos.push(String(u));
+      return null;
+    };
+  });
+  await abrir(page, DURANTE, true);
+  const boletim = page.getByTestId("boletim");
+  await expect(boletim).toContainText("Diferença");
+  await expect(boletim).toContainText("votos");
+  await expect(boletim).toContainText("Viradas desde o 1º turno");
+  await page.getByTestId("mandar-whatsapp").click();
+  const abertos = await page.evaluate(() => (window as unknown as { abertos: string[] }).abertos);
+  const alvo = new URL(abertos[0]);
+  expect(alvo.hostname).toBe("wa.me");
+  const texto = alvo.searchParams.get("text") ?? "";
+  expect(texto).toContain("Resultado parcial");
+  expect(texto).toContain("41,37%");
+});

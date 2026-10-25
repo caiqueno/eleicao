@@ -7,7 +7,8 @@ import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import type { AreaMapa, RespostaMapa } from "@/lib/tse/mapa";
 import type { RespostaPrimeiroTurno } from "@/lib/tse/primeiroTurno";
 import { Anuncio, Busca, Cabecalho, LinhaDoTempo } from "./Cabecalho";
-import { useAgora, useHash, useHistorico, useJsonPeriodico, usePreferencia } from "./hooks";
+import { Boletim, Presenca, textoWhatsapp, viradas } from "./Exclusivos";
+import { useAgora, useHash, useHistorico, useJsonPeriodico, usePreferencia, usePresenca } from "./hooks";
 import { PainelDetalhe, PainelProjecao, projetar } from "./Laterais";
 import { Mapa, type Vista } from "./Mapa";
 import { ordenarPorNumero, Placar, PlacarGovernadores } from "./Placar";
@@ -74,6 +75,7 @@ export function Aplicacao() {
   const tema = temaSalvo === "claro" ? "claro" : "escuro";
   const [aviso, setAviso] = useState<string | null>(null);
   const agora = useAgora();
+  const pessoas = usePresenca();
 
   useEffect(() => {
     document.documentElement.dataset.theme = tema === "claro" ? "light" : "dark";
@@ -223,6 +225,15 @@ export function Aplicacao() {
     return Object.fromEntries((mapaBr.dados?.areas ?? []).map((a) => [a.cd, coresDe(ordenarPorNumero(a.candidatos ?? []))]));
   }, [cargo, vista, mapaBr.dados]);
   const govBr = cargo === "governador" && uf === "br";
+  const listaViradas = useMemo(
+    () => (cargo === "presidente" && vista === "br" && mapaBr.dados && ptTopo.dados ? viradas(mapaBr.dados.areas, ptTopo.dados.areas, numeros) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cargo, vista, mapaBr.dados, ptTopo.dados, chaveNumeros],
+  );
+  const mandarWhatsapp = () => {
+    const texto = textoWhatsapp(resultado, Date.now(), window.location.href);
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <div className="app">
@@ -236,6 +247,7 @@ export function Aplicacao() {
         aoTema={() => definirTema(tema === "escuro" ? "claro" : "escuro")}
         aoCompartilhar={compartilhar}
         aviso={aviso}
+        presenca={<Presenca n={pessoas} />}
       />
       <div className="faixa-anuncio">
         <Anuncio compacto />
@@ -313,6 +325,18 @@ export function Aplicacao() {
             mudancas={mudancas}
             primeiroTurno={parcelas(ptAreaTopo?.votos, numeros)}
             atual={parcelaTopo}
+            topo={
+              <Boletim
+                resultado={resultado}
+                candidatos={candidatos}
+                cores={cores}
+                areas={areasMapa ?? []}
+                nomeAreas={nomeFilhas}
+                viradas={listaViradas}
+                agora={agora}
+                aoWhatsapp={mandarWhatsapp}
+              />
+            }
           />
         )}
       </main>
