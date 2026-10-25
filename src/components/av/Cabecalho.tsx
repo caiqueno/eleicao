@@ -68,10 +68,16 @@ export function Anuncio({ compacto = false }: { compacto?: boolean }) {
       target="_blank"
       rel="noopener noreferrer"
       data-testid="anuncio-whatsapp"
-      aria-label={`Patrocine o acompanhevotos: ${PATROCINIO_VALOR ?? "valor a combinar"}. Fale pelo WhatsApp`}
+      aria-label={`Espaço de patrocínio nesta página de apuração${PATROCINIO_VALOR ? `: ${PATROCINIO_VALOR}` : ""}. Fale pelo WhatsApp`}
     >
       <span className="patrocinio__rotulo">
-        Patrocine este espaço · <b data-testid="patrocinio-valor">{PATROCINIO_VALOR ?? "valor a combinar"}</b>
+        Espaço de patrocínio nesta página de apuração
+        {PATROCINIO_VALOR && (
+          <>
+            {" "}
+            · <b data-testid="patrocinio-valor">{PATROCINIO_VALOR}</b>
+          </>
+        )}
       </span>
       <span className="patrocinio__acao">
         <Icone nome="whats" /> Fale com a gente
@@ -80,11 +86,11 @@ export function Anuncio({ compacto = false }: { compacto?: boolean }) {
   );
 }
 
-/** Convite para acompanhar a próxima eleição. O destino fica em src/config/contato.ts. */
+/** Convite para ser avisado na próxima eleição (abre uma conversa com o WhatsApp do projeto). O destino fica em src/config/contato.ts. */
 export function Seguir({ className }: { className?: string }) {
   return (
     <a className={`seguir${className ? ` ${className}` : ""}`} href={SEGUIR_URL} target="_blank" rel="noopener noreferrer" data-testid="seguir">
-      <Icone nome="whats" /> Siga para a próxima eleição
+      <Icone nome="whats" /> Quero ser avisado na próxima eleição
     </a>
   );
 }
@@ -134,9 +140,7 @@ export function Cabecalho(p: PropsCab) {
         ))}
       </div>
       {p.presenca}
-      <div className="topo__anuncio">
-        <Anuncio />
-      </div>
+      <div className="topo__anuncio" />
       <nav className="icones" aria-label="Ações">
         <button type="button" className="busca-topo" onClick={p.aoBuscar} aria-label="Buscar município" data-testid="botao-busca">
           <Icone nome="busca" /> <span className="busca-topo__texto">Buscar sua cidade</span>
