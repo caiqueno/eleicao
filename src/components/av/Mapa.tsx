@@ -1,6 +1,6 @@
 "use client";
 
-import { geoCentroid, geoMercator, geoPath, type GeoPermissibleObjects } from "d3-geo";
+import { geoIdentity, geoMercator, geoPath, geoTransform, type GeoPermissibleObjects } from "d3-geo";
 import type { Feature, FeatureCollection, Geometry, MultiPolygon, Polygon } from "geojson";
 import { useEffect, useMemo, useRef, useState, type PointerEvent as PE } from "react";
 import { feature } from "topojson-client";
@@ -65,24 +65,44 @@ function corDaArea(area: AreaMapa | undefined, numeros: string[], cores: string[
   return misturar(cores[i], 0.4 + 0.6 * Math.min(1, margem / 30));
 }
 
-/** Centroide do maior polígono (evita rótulos no meio do mar em países com ilhas). */
-function pontoRotulo(f: Feature<Geometry>): [number, number] {
+type Caminho = ReturnType<typeof geoPath>;
+
+/** Ponto do rótulo: centro do maior polígono (evita rótulos no mar em países e municípios com ilhas). */
+function pontoRotulo(f: Feature<Geometry>, caminho: Caminho): [number, number] {
   if (f.geometry.type === "MultiPolygon") {
-    const g = f.geometry as MultiPolygon;
-    let melhor = g.coordinates[0];
+    let melhor: [number, number] = [0, 0];
     let maior = -1;
-    for (const poli of g.coordinates) {
-      const anel = poli[0];
-      let a = 0;
-      for (let i = 0, j = anel.length - 1; i < anel.length; j = i++) a += (anel[j][0] + anel[i][0]) * (anel[j][1] - anel[i][1]);
-      if (Math.abs(a) > maior) {
-        maior = Math.abs(a);
-        melhor = poli;
+    for (const coords of (f.geometry as MultiPolygon).coordinates) {
+      const poli = { type: "Polygon", coordinates: coords } as Polygon;
+      const a = caminho.area(poli);
+      if (a > maior) {
+        maior = a;
+        melhor = caminho.centroid(poli);
       }
     }
-    return geoCentroid({ type: "Polygon", coordinates: melhor } as Polygon);
+    return melhor;
   }
-  return geoCentroid(f as GeoPermissibleObjects);
+  return caminho.centroid(f as GeoPermissibleObjects);
+}
+
+/**
+ * Projeção plana (lon × cos(lat), lat) para Brasil e UFs. Não depende do
+ * sentido dos anéis dos polígonos, ao contrário das projeções esféricas.
+ */
+function projecaoPlana(fc: Fc, w: number, h: number, m: number) {
+  const [[x0, y0], [x1, y1]] = geoPath(geoIdentity()).bounds(fc as GeoPermissibleObjects);
+  const k = Math.cos((((y0 + y1) / 2) * Math.PI) / 180);
+  const s = Math.min((w - 2 * m) / ((x1 - x0) * k || 1), (h - 2 * m) / (y1 - y0 || 1));
+  const tx = m + (w - 2 * m - (x1 - x0) * k * s) / 2;
+  const ty = m + (h - 2 * m - (y1 - y0) * s) / 2;
+  const f = (lon: number, lat: number): [number, number] => [tx + (lon - x0) * k * s, ty + (y1 - lat) * s];
+  const transformacao = geoTransform({
+    point(x, y) {
+      const [a, b] = f(x, y);
+      this.stream.point(a, b);
+    },
+  });
+  return { f, transformacao };
 }
 
 interface Zoom {
@@ -137,22 +157,31 @@ export function Mapa({ vista, uf, areas, candidatos, cores, selecionado, aoSelec
 
   const desenho = useMemo(() => {
     if (!geo || geo.arquivo !== arquivo || !geo.fc) return null;
-    const feats = geo.fc.features.filter((f) => !(vista === "zz" && f.properties?.name === "Antarctica"));
+    const feats = geo.fc.features.filter((f) => f.geometry && !(vista === "zz" && f.properties?.name === "Antarctica"));
     const fc = { type: "FeatureCollection", features: feats } as Fc;
     const margem = vista === "zz" ? 8 : 16;
-    const proj = geoMercator().fitExtent(
-      [
-        [margem, margem],
-        [tam.w - margem, tam.h - margem],
-      ],
-      fc as GeoPermissibleObjects,
-    );
-    const caminho = geoPath(proj);
+    let proj: (p: [number, number]) => [number, number] | null;
+    let caminho: Caminho;
+    if (vista === "zz") {
+      const merc = geoMercator().fitExtent(
+        [
+          [margem, margem],
+          [tam.w - margem, tam.h - margem],
+        ],
+        fc as GeoPermissibleObjects,
+      );
+      proj = (p) => merc(p);
+      caminho = geoPath(merc);
+    } else {
+      const plana = projecaoPlana(fc, tam.w, tam.h, margem);
+      proj = ([lon, lat]) => plana.f(lon, lat);
+      caminho = geoPath(plana.transformacao);
+    }
     return {
       proj,
       itens: feats.map((f, i) => {
         const chave = vista === "br" ? IBGE_UF[f.properties?.uf ?? ""] : vista === "uf" ? (f.properties?.id ?? "") : (f.properties?.name ?? "");
-        const [lx, ly] = proj(pontoRotulo(f)) ?? [0, 0];
+        const [lx, ly] = pontoRotulo(f, caminho);
         return { i, chave, d: caminho(f) ?? "", area: caminho.area(f), lx, ly, nome: f.properties?.nome ?? f.properties?.name ?? "" };
       }),
     };
@@ -261,12 +290,12 @@ export function Mapa({ vista, uf, areas, candidatos, cores, selecionado, aoSelec
     if (vista === "br") return desenho.itens.map((it) => ({ x: it.lx, y: it.ly, texto: it.chave.toUpperCase(), tam: 11, chave: it.chave }));
     if (vista === "zz") {
       return desenho.itens
-        .filter((it) => PAISES_PT[it.nome] && it.area * zoom.k * zoom.k > 900)
+        .filter((it) => PAISES_PT[it.nome] && it.area * zoom.k * zoom.k > 260)
         .map((it) => ({
           x: it.lx,
           y: it.ly,
           texto: PAISES_PT[it.nome],
-          tam: Math.max(8, Math.min(13, Math.sqrt(it.area) / 9)),
+          tam: Math.max(7.5, Math.min(13, Math.sqrt(it.area) / 9)),
           chave: it.nome,
         }));
     }
@@ -324,7 +353,7 @@ export function Mapa({ vista, uf, areas, candidatos, cores, selecionado, aoSelec
             );
           })}
           {cidades.map(({ area, x, y }) => {
-            const r = (3 + 11 * Math.sqrt((area.eleitorado ?? 0) / maiorEleitorado)) / Math.sqrt(zoom.k);
+            const r = (2.5 + 7 * Math.sqrt((area.eleitorado ?? 0) / maiorEleitorado)) / Math.sqrt(zoom.k);
             const sel = area.cd === selecionado;
             return (
               <circle

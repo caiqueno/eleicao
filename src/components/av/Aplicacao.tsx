@@ -73,7 +73,7 @@ export function Aplicacao() {
   const [temaSalvo, definirTema] = usePreferencia("av:tema", "escuro");
   const tema = temaSalvo === "claro" ? "claro" : "escuro";
   const [aviso, setAviso] = useState<string | null>(null);
-  const agora = useAgora(1000);
+  const agora = useAgora();
 
   useEffect(() => {
     document.documentElement.dataset.theme = tema === "claro" ? "light" : "dark";
@@ -182,6 +182,7 @@ export function Aplicacao() {
     detalhe = {
       ...comum,
       titulo: cargo === "presidente" ? "Brasil" : "Governadores",
+      subtitulo: cargo === "governador" ? `${mapaBr.dados?.areas.length ?? "—"} estados com 2º turno` : undefined,
       sigla: "BR",
       area: cargo === "presidente" ? areaDoResultado(resultado) : null,
       filhas: mapaBr.dados?.areas ?? [],

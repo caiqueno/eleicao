@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import type { CargoId } from "@/config/eleicao";
 import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import type { AreaMapa } from "@/lib/tse/mapa";
@@ -8,11 +10,12 @@ import { formatarDataHora } from "@/lib/formatacao";
 
 export function Foto({ cargo, uf, c, cor, tam = 72 }: { cargo: CargoId; uf: string; c: CandidatoBase; cor: string; tam?: number }) {
   const url = fotoUrl(cargo, uf, c.sqcand);
+  const [falhou, setFalhou] = useState<string | null>(null);
   return (
     <span className="foto" style={{ background: cor, width: tam, height: tam }}>
-      {url ? (
+      {url && falhou !== url ? (
         // eslint-disable-next-line @next/next/no-img-element -- foto oficial servida pela própria API
-        <img src={url} alt={`Foto de ${nomeCurto(c.nome, true)}`} width={tam} height={tam} loading="lazy" />
+        <img src={url} alt={`Foto de ${nomeCurto(c.nome, true)}`} width={tam} height={tam} onError={() => setFalhou(url)} />
       ) : (
         <span className="foto__inicial">{c.nome[0]}</span>
       )}
@@ -52,6 +55,7 @@ export function Placar({ cargo, uf, resultado, agora, carregando }: Props) {
   let titulo: string;
   if (t.finalizada) titulo = "Totalização encerrada pelo TSE";
   else if (apurando) titulo = `${pct2(t.percentualSecoesTotalizadas)} das seções apuradas`;
+  else if (agora === 0) titulo = "Carregando…";
   else if (antes) titulo = `A apuração começa em ${relogio(INICIO_DIVULGACAO_MS - agora)}`;
   else titulo = "Aguardando os primeiros números do TSE";
 

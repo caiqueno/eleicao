@@ -194,6 +194,7 @@ interface PropsDetalhe {
   aoFechar: (() => void) | null;
   consultadoEm: string | null;
   erro: string | null;
+  subtitulo?: string;
 }
 
 function Lider({ area, candidatos, cores }: { area: AreaMapa; candidatos: CandidatoBase[]; cores: string[] }) {
@@ -207,6 +208,12 @@ function Lider({ area, candidatos, cores }: { area: AreaMapa; candidatos: Candid
       {nomeCurto(cands[i].nome)} {pct1(p[i])}
     </span>
   );
+}
+
+/** "Estados Unidos" → "EU", "Japão" → "JA". */
+function siglaPais(nome: string): string {
+  const partes = nome.split(/\s+/).filter((x) => x.length > 2);
+  return (partes.length > 1 ? partes[0][0] + partes[1][0] : nome.slice(0, 2)).toUpperCase();
 }
 
 export function PainelDetalhe(p: PropsDetalhe) {
@@ -250,7 +257,7 @@ export function PainelDetalhe(p: PropsDetalhe) {
         <div>
           <h2 className="det__titulo">{p.titulo}</h2>
           <p className="det__sub">
-            {a ? `${pct1(a.percentualSecoes ?? 0)} das seções · ${compacto(a.eleitorado, false)} de eleitores` : "carregando…"}
+            {p.subtitulo ?? (a ? `${pct1(a.percentualSecoes ?? 0)} das seções · ${compacto(a.eleitorado, false)} de eleitores` : "carregando…")}
           </p>
         </div>
         {p.aoFechar && (
@@ -262,7 +269,8 @@ export function PainelDetalhe(p: PropsDetalhe) {
 
       <section className="det__bloco">
         <h3 className="det__rotulo">
-          {p.cargo === "presidente" ? "Presidente" : "Governador"} {p.tipoFilhas === "exterior" || p.sigla === "ZZ" ? "no exterior" : `· ${p.titulo}`}
+          {p.cargo === "presidente" ? "Presidente" : "Governador"}{" "}
+          {p.tipoFilhas === "exterior" || p.sigla === "ZZ" ? "no exterior" : p.titulo === "Governadores" ? "· 2º turno nos estados" : `· ${p.titulo}`}
         </h3>
         {a && apurando && parc ? (
           <div className="det__res">
@@ -333,7 +341,7 @@ export function PainelDetalhe(p: PropsDetalhe) {
               ? paises.map((g) => (
                   <li key={g.pais}>
                     <button type="button" className="linha" onClick={() => setAberto(aberto === g.pais ? null : g.pais)} aria-expanded={aberto === g.pais}>
-                      <span className="linha__sigla">{g.pais.slice(0, 2).toUpperCase()}</span>
+                      <span className="linha__sigla">{siglaPais(g.pais)}</span>
                       <span className="linha__meio">
                         <b>{g.pais}</b>
                         <small>

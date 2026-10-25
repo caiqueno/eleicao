@@ -86,14 +86,33 @@ export function useJsonPeriodico<T>(url: string | null, intervaloS = 60): Estado
   return { ...estado, atualizar: () => setGatilho((g) => g + 1) };
 }
 
-/** Relógio que atualiza a cada `passoMs`. */
-export function useAgora(passoMs = 1000): number {
-  const [agora, setAgora] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setAgora(Date.now()), passoMs);
-    return () => clearInterval(t);
-  }, [passoMs]);
-  return agora;
+/* Relógio compartilhado: 0 no servidor e na hidratação, para não divergir do HTML estático. */
+let relogioAtual = 0;
+const ouvintesRelogio = new Set<() => void>();
+let intervaloRelogio: ReturnType<typeof setInterval> | null = null;
+
+function inscreverRelogio(o: () => void) {
+  ouvintesRelogio.add(o);
+  if (!intervaloRelogio) {
+    relogioAtual = Date.now();
+    intervaloRelogio = setInterval(() => {
+      relogioAtual = Date.now();
+      ouvintesRelogio.forEach((f) => f());
+    }, 1000);
+    queueMicrotask(() => ouvintesRelogio.forEach((f) => f()));
+  }
+  return () => {
+    ouvintesRelogio.delete(o);
+    if (ouvintesRelogio.size === 0 && intervaloRelogio) {
+      clearInterval(intervaloRelogio);
+      intervaloRelogio = null;
+    }
+  };
+}
+
+/** Hora atual (ms), atualizada a cada segundo; 0 antes da hidratação. */
+export function useAgora(): number {
+  return useSyncExternalStore(inscreverRelogio, () => relogioAtual, () => 0);
 }
 
 export interface PontoHistorico {

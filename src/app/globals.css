@@ -13,8 +13,8 @@
   --destaque: #ffffff;
   --verde: #33d17a;
   --vivo: #ff4d4d;
-  --mapa-vazio: #2b2b2b;
-  --mapa-fora: #171717;
+  --mapa-vazio: #303030;
+  --mapa-fora: #131313;
   --mapa-carregando: #3d3d3d;
   --mapa-linha: #0a0a0a;
   --sombra: 0 10px 30px rgba(0, 0, 0, 0.45);
@@ -220,7 +220,7 @@ a {
 /* ---------------------------------------------------------------- corpo -- */
 
 .corpo {
-  flex: 1;
+  flex: 0 0 auto;
   display: grid;
   gap: 12px;
   padding: 0 12px 8px;
@@ -231,8 +231,7 @@ a {
   grid-template-areas:
     "placar placar dir"
     "esq centro dir";
-  height: calc(100dvh - 58px - 30px);
-  min-height: 620px;
+  height: max(640px, calc(100dvh - 58px - 30px));
 }
 
 .area-placar {
@@ -883,6 +882,8 @@ a {
   user-select: none;
 }
 .mapa__svg {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;

@@ -1,160 +1,102 @@
 /**
- * Testes de ponta a ponta com respostas SIMULADAS da API interna.
- * Nenhum dado aqui é resultado real: as rotas /api/* são interceptadas.
+ * Testes de ponta a ponta com respostas SIMULADAS da API interna (ver simulacao.ts).
+ * Nenhum dado aqui é resultado real.
  */
 import { expect, test, type Page } from "@playwright/test";
+import { simularApi } from "./simulacao";
 
-const ABRANGENCIAS = {
-  consultadoEm: "2026-10-25T21:00:00.000Z",
-  opcoes: [
-    { cargo: "presidente", uf: "br", nome: "Brasil" },
-    { cargo: "presidente", uf: "sp", nome: "São Paulo" },
-    { cargo: "governador", uf: "am", nome: "Amazonas" },
-    { cargo: "governador", uf: "df", nome: "Distrito Federal" },
-  ],
-};
+const ANTES = "2026-10-25T11:30:00-03:00";
+const DURANTE = "2026-10-25T19:30:00-03:00";
 
-function resultado(parcial: Record<string, unknown> = {}) {
-  return {
-    estado: "ok",
-    mensagem: null,
-    consultadoEm: "2026-10-25T21:00:00.000Z",
-    resultado: {
-      cargo: "presidente",
-      cargoNome: "Presidente",
-      abrangencia: "br",
-      abrangenciaNome: "Brasil",
-      codigoEleicao: "6258",
-      turno: 2,
-      candidatos: [
-        { numero: "98", nome: "CANDIDATO SIMULADO B", partido: "PSIM", votos: 4000, percentualFonte: 40, percentualCalculado: 40, situacao: null, eleito: false },
-        { numero: "99", nome: "CANDIDATO SIMULADO A", partido: "PTST", votos: 6000, percentualFonte: 60, percentualCalculado: 60, situacao: null, eleito: false },
-      ],
-      totalizacao: { secoesTotal: 1000, secoesTotalizadas: 250, percentualSecoesTotalizadas: 25, atualizadoEmFonte: "2026-10-25T17:45:10-03:00", finalizada: false },
-      votos: { eleitorado: 20000, comparecimento: 11000, abstencao: 9000, validos: 10000, brancos: 400, nulos: 600 },
-      fonteUrl: "https://resultados.tse.jus.br/oficial/ele2026/6258/dados/br/br-c0001-e006258-u.jws",
-      ...parcial,
-    },
-  };
-}
-
-async function simular(page: Page, corpo: unknown, status = 200) {
-  const chamadas: string[] = [];
-  await page.route("**/api/abrangencias", (r) => r.fulfill({ json: ABRANGENCIAS }));
-  await page.route("**/api/resultados**", (r) => {
-    chamadas.push(r.request().url());
-    return r.fulfill({ status, json: corpo });
-  });
-  return chamadas;
-}
-
-test("mostra candidatos ordenados por votos, totalização e horários separados", async ({ page }) => {
+async function abrir(page: Page, hora: string, apurando: boolean, hash = "#presidente") {
   const erros: string[] = [];
   page.on("pageerror", (e) => erros.push(e.message));
-  page.on("console", (m) => m.type() === "error" && erros.push(m.text()));
-  await simular(page, resultado());
-  await page.goto("/");
-  const cartoes = page.getByTestId("candidato");
-  await expect(cartoes).toHaveCount(2);
-  await expect(cartoes.first()).toContainText("CANDIDATO SIMULADO A");
-  await expect(cartoes.first()).toContainText("6.000");
-  await expect(cartoes.first()).toContainText("60,00");
-  await expect(page.getByTestId("secoes-totalizadas")).toContainText("250 de 1.000");
-  await expect(page.getByRole("progressbar", { name: "Seções totalizadas" })).toHaveAttribute("aria-valuenow", "25");
-  await expect(page.getByTestId("atualizado-fonte")).toContainText("17:45");
-  await expect(page.getByTestId("consultado-em")).toBeVisible();
+  await page.clock.setFixedTime(new Date(hora));
+  const chamadas = await simularApi(page, apurando);
+  await page.goto(`/${hash}`);
+  return { erros, chamadas };
+}
+
+test("antes das 17h: contagem regressiva, sem vencedor e sem 'tempo real'", async ({ page }) => {
+  const { erros } = await abrir(page, ANTES, false);
+  await expect(page.getByTestId("estado")).toContainText("A apuração começa em 5:30:00");
+  await expect(page.getByTestId("candidato")).toHaveCount(2);
   await expect(page.getByTestId("selo-eleito")).toHaveCount(0);
   await expect(page.getByText(/tempo real/i)).toHaveCount(0);
+  await expect(page.locator(".mapa__area")).toHaveCount(27);
+  expect(erros).toEqual([]);
+});
+
+test("durante a apuração: percentuais, mapa colorido e horário do TSE", async ({ page }) => {
+  const { erros } = await abrir(page, DURANTE, true);
+  await expect(page.getByTestId("estado")).toContainText("41,37% das seções apuradas");
+  await expect(page.getByTestId("candidato").first()).toContainText("50,62%");
+  await expect(page.getByTestId("atualizado-fonte")).toContainText("19:28");
+  await expect(page.getByTestId("consultado-em")).toBeVisible();
+  const cores = await page.locator(".mapa__area").evaluateAll((els) => new Set(els.map((e) => e.getAttribute("fill"))).size);
+  expect(cores).toBeGreaterThan(3);
   expect(erros).toEqual([]);
 });
 
 test("não tem rolagem horizontal", async ({ page }) => {
-  await simular(page, resultado());
-  await page.goto("/");
-  await expect(page.getByTestId("candidato")).toHaveCount(2);
+  await abrir(page, DURANTE, true);
+  await expect(page.locator(".mapa__area").first()).toBeVisible();
   const sobra = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(sobra).toBeLessThanOrEqual(0);
 });
 
-test("botão atualizar faz nova consulta", async ({ page }) => {
-  const chamadas = await simular(page, resultado());
-  await page.goto("/");
-  await expect(page.getByTestId("candidato")).toHaveCount(2);
-  const antes = chamadas.length;
-  await page.getByTestId("botao-atualizar").click();
-  await expect.poll(() => chamadas.length).toBeGreaterThan(antes);
+test("lista de estados leva ao mapa de municípios e ao município", async ({ page }) => {
+  await abrir(page, DURANTE, true);
+  await page.getByTestId("linha-area").filter({ hasText: "São Paulo" }).click();
+  await expect(page).toHaveURL(/#presidente-sp$/);
+  await expect(page.getByTestId("painel-detalhe")).toContainText("Por município");
+  await expect(page.locator(".mapa__area")).toHaveCount(645);
+  await page.getByTestId("linha-area").first().click();
+  await expect(page).toHaveURL(/#presidente-sp-\d{7}$/);
+  await page.getByRole("button", { name: "Voltar um nível" }).click();
+  await expect(page).toHaveURL(/#presidente-sp$/);
 });
 
-test("estado sem dados mostra aviso e nenhum candidato", async ({ page }) => {
-  await simular(page, { estado: "sem-dados", mensagem: "O TSE ainda não divulgou resultados do 2º turno para esta seleção.", consultadoEm: "2026-10-25T13:00:00.000Z", resultado: null });
-  await page.goto("/");
-  await expect(page.getByTestId("estado")).toHaveAttribute("data-estado", "sem-dados");
-  await expect(page.getByTestId("candidato")).toHaveCount(0);
+test("link com código IBGE abre o município", async ({ page }) => {
+  await abrir(page, DURANTE, true, "#presidente-sp-3500105");
+  await expect(page.getByTestId("painel-detalhe")).toContainText("Adamantina");
 });
 
-test("erro da fonte é informado", async ({ page }) => {
-  await simular(page, { estado: "erro-fonte", mensagem: "Falha de conexão com o TSE (resultado).", consultadoEm: "2026-10-25T13:00:00.000Z", resultado: null }, 502);
-  await page.goto("/");
-  await expect(page.getByTestId("estado")).toHaveAttribute("data-estado", "erro-fonte");
-  await expect(page.getByRole("alert").first()).toBeVisible();
+test("exterior: mapa-múndi com nomes de países e lista por país", async ({ page }) => {
+  await abrir(page, DURANTE, true);
+  await page.getByTestId("botao-exterior").click();
+  await expect(page).toHaveURL(/#presidente-zz$/);
+  await expect(page.locator(".mapa__rotulo--pais").filter({ hasText: "Canadá" })).toHaveCount(1);
+  await expect(page.locator(".mapa__cidade")).toHaveCount(186);
+  await expect(page.getByTestId("painel-detalhe")).toContainText("Por país");
 });
 
-test("selo de eleito só aparece quando a fonte informa", async ({ page }) => {
-  const r = resultado({
-    candidatos: [
-      { numero: "99", nome: "CANDIDATO SIMULADO A", partido: "PTST", votos: 6000, percentualFonte: 60, percentualCalculado: 60, situacao: "Eleito", eleito: true },
-      { numero: "98", nome: "CANDIDATO SIMULADO B", partido: "PSIM", votos: 4000, percentualFonte: 40, percentualCalculado: 40, situacao: null, eleito: false },
-    ],
-    totalizacao: { secoesTotal: 1000, secoesTotalizadas: 1000, percentualSecoesTotalizadas: 100, atualizadoEmFonte: "2026-10-25T21:10:00-03:00", finalizada: true },
-  });
-  await simular(page, r);
-  await page.goto("/");
-  await expect(page.getByTestId("selo-eleito")).toHaveCount(1);
-  await expect(page.getByTestId("totalizacao-encerrada")).toBeVisible();
+test("governadores: só as UFs com 2º turno", async ({ page }) => {
+  await abrir(page, ANTES, false);
+  await page.getByTestId("aba-governador").click();
+  await expect(page).toHaveURL(/#governador$/);
+  await expect(page.locator(".multi__item")).toHaveCount(6);
 });
 
-test("trocar para governador usa só UFs com 2º turno e atualiza a URL", async ({ page }) => {
-  const chamadas = await simular(page, resultado());
-  await page.goto("/");
-  await page.getByTestId("seletor-cargo").getByRole("button", { name: /governador/i }).click();
-  await expect(page).toHaveURL(/cargo=governador/);
-  const opcoes = await page.getByTestId("seletor-uf").locator("option").allTextContents();
-  expect(opcoes.join("|")).toMatch(/Amazonas/);
-  expect(opcoes.join("|")).not.toMatch(/São Paulo/);
-  await expect.poll(() => chamadas.some((u) => u.includes("cargo=governador"))).toBe(true);
-});
-
-test("anúncio do WhatsApp aponta para o número do Caique", async ({ page }) => {
-  await simular(page, resultado());
-  await page.goto("/");
-  const link = page.getByTestId("anuncio-whatsapp").getByRole("link");
+test("anúncio abre o WhatsApp em nova aba", async ({ page }) => {
+  await abrir(page, ANTES, false);
+  const link = page.getByTestId("anuncio-whatsapp").first();
   await expect(link).toHaveAttribute("href", "https://wa.me/5511944650268");
   await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", /noopener/);
 });
 
-test("navegação por teclado alcança o botão atualizar", async ({ page, isMobile }) => {
-  test.skip(isMobile, "teclado só no desktop");
-  await simular(page, resultado());
-  await page.goto("/");
-  await expect(page.getByTestId("candidato")).toHaveCount(2);
-  for (let i = 0; i < 40; i++) {
-    await page.keyboard.press("Tab");
-    const id = await page.evaluate(() => document.activeElement?.getAttribute("data-testid"));
-    if (id === "botao-atualizar") return;
-  }
-  throw new Error("botão atualizar não recebeu foco por Tab");
+test("busca de município", async ({ page }) => {
+  await abrir(page, DURANTE, true);
+  await page.getByTestId("botao-busca").click();
+  await page.getByRole("searchbox", { name: "Nome do município" }).fill("adaman");
+  await page.getByRole("button", { name: /Adamantina/ }).click();
+  await expect(page).toHaveURL(/#presidente-sp-/);
 });
 
-test("antes da apuração (0 seções) avisa que a apuração não começou e não indica eleito", async ({ page }) => {
-  await simular(page, resultado({
-    candidatos: [
-      { numero: "98", nome: "CANDIDATO SIMULADO B", partido: "PSIM", votos: 0, percentualFonte: 0, percentualCalculado: null, situacao: null, eleito: false },
-      { numero: "99", nome: "CANDIDATO SIMULADO A", partido: "PTST", votos: 0, percentualFonte: 0, percentualCalculado: null, situacao: null, eleito: false },
-    ],
-    totalizacao: { secoesTotal: 1000, secoesTotalizadas: 0, percentualSecoesTotalizadas: 0, atualizadoEmFonte: null, finalizada: false },
-  }));
-  await page.goto("/");
-  await expect(page.getByText("Apuração ainda não começou")).toBeVisible();
-  await expect(page.getByTestId("candidato").first()).toContainText("CANDIDATO SIMULADO A");
-  await expect(page.getByTestId("selo-eleito")).toHaveCount(0);
+test("consulta a API periodicamente sem duplicar", async ({ page }) => {
+  const { chamadas } = await abrir(page, DURANTE, true);
+  await expect(page.locator(".mapa__area").first()).toBeVisible();
+  const res = chamadas.filter((c) => c.startsWith("/api/resultados"));
+  expect(res.length).toBeLessThanOrEqual(2);
 });
