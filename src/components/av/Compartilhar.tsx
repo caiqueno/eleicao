@@ -6,7 +6,7 @@ import { textoWhatsapp } from "./Exclusivos";
 import { IconeApp } from "./IconesApps";
 import { coresDe, horaBrasilia, INICIO_DIVULGACAO_MS, nomeCurto, parcelas, pct2, type CandidatoBase } from "./util";
 
-export const SITE = "acompanhevotos.vercel.app";
+export const SITE = "www.acompanhevotos.com.br";
 
 export type Formato = "stories" | "feed";
 const TAMANHOS: Record<Formato, [number, number]> = { stories: [1080, 1920], feed: [1080, 1350] };
