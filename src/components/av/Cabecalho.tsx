@@ -80,7 +80,7 @@ export function Anuncio({ compacto = false }: { compacto?: boolean }) {
         )}
       </span>
       <span className="patrocinio__acao">
-        <Icone nome="whats" /> Fale com a gente
+        <Icone nome="whats" /> Clique aqui
       </span>
     </a>
   );

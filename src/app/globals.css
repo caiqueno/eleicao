@@ -265,8 +265,35 @@ a {
 }
 
 /* O patrocínio fica no rodapé: nada entre o topo e o placar. */
-.rodape .patrocinio {
+/* Faixa de patrocínio logo abaixo do topo, baixa para o placar continuar na primeira tela do celular. */
+.faixa-anuncio {
+  display: flex;
+  justify-content: center;
+  padding: 0 12px 8px;
+}
+.patrocinio--compacto {
+  padding: 4px 12px;
+  font-size: 12px;
+  max-width: 100%;
   white-space: normal;
+  text-align: center;
+}
+
+/* Link do plano de governo: igual para os dois candidatos. */
+.plano {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--suave);
+}
+a.plano,
+.plano a {
+  color: var(--suave);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.plano a {
+  margin: 0 3px;
 }
 
 /* ---------------------------------------------------------------- corpo -- */

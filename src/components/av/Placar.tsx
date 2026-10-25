@@ -5,7 +5,37 @@ import { useState } from "react";
 import type { CargoId } from "@/config/eleicao";
 import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import type { AreaMapa } from "@/lib/tse/mapa";
+import { PLANOS, PLANOS_FONTE_URL, urlPlano } from "@/config/planos";
 import { compacto, coresDe, fotoUrl, horaBrasilia, INICIO_DIVULGACAO_MS, inteiro, nomeCurto, parcelas, pct1, pct2, relogio, type CandidatoBase } from "./util";
+
+/** Plano de governo registrado no TSE: o mesmo formato para os dois candidatos. */
+export function PlanoDeGoverno({ sq }: { sq: string | null }) {
+  const plano = sq ? PLANOS[sq] : undefined;
+  if (!sq || !plano) {
+    return (
+      <a className="plano" href={PLANOS_FONTE_URL} target="_blank" rel="noopener noreferrer" data-testid="plano-governo">
+        Plano de governo no TSE
+      </a>
+    );
+  }
+  if (plano.partes.length === 1) {
+    return (
+      <a className="plano" href={urlPlano(sq, 1)} target="_blank" rel="noopener" data-testid="plano-governo">
+        Plano de governo (PDF do TSE)
+      </a>
+    );
+  }
+  return (
+    <span className="plano" data-testid="plano-governo">
+      Plano de governo (PDF do TSE), partes:{" "}
+      {plano.partes.map((_, i) => (
+        <a key={i} href={urlPlano(sq, i + 1)} target="_blank" rel="noopener" aria-label={`Parte ${i + 1} de ${plano.partes.length}`}>
+          {i + 1}
+        </a>
+      ))}
+    </span>
+  );
+}
 
 export function Foto({ cargo, uf, c, cor, tam = 72 }: { cargo: CargoId; uf: string; c: CandidatoBase; cor: string; tam?: number }) {
   const url = fotoUrl(cargo, uf, c.sqcand);
@@ -77,6 +107,7 @@ export function Placar({ cargo, uf, resultado, agora, carregando }: Props) {
                   </span>
                 )}
               </span>
+              <PlanoDeGoverno sq={c.sqcand} />
               {p && (
                 <span className="placar__pct">
                   <b style={{ color: cores[i] }}>{pct2(c.percentualFonte ?? p[i])}</b>
