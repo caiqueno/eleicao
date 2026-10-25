@@ -11,7 +11,7 @@ import { buscarTexto, ErroFonte, type OpcoesBusca } from "./http";
  *   TSE), para de consultar por 10 minutos: tentar durante o bloqueio o renova.
  */
 
-export const TTL_OK_MS = 30_000;
+export const TTL_OK_MS = 10_000;
 export const TTL_404_MS = 30_000;
 export const TTL_ERRO_MS = 15_000;
 export const PAUSA_BLOQUEIO_MS = 10 * 60_000;
