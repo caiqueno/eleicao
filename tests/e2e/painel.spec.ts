@@ -84,24 +84,29 @@ test("patrocínio: oferta clara, sem preço inventado, abre o WhatsApp em nova a
   await expect(link).toHaveAttribute("href", /^https:\/\/wa\.me\/5511944650268\?text=/);
   await expect(link).toHaveAttribute("target", "_blank");
   await expect(link).toHaveAttribute("rel", /noopener/);
-  await expect(link).toContainText("Patrocine este espaço");
-  await expect(page.getByTestId("patrocinio-valor").first()).toHaveText("valor a combinar");
+  await expect(link).toContainText("Espaço de patrocínio nesta página de apuração");
+  await expect(link).not.toContainText("valor a combinar");
+  // Nada entre o topo e o placar: o patrocínio fica no rodapé.
+  await expect(page.locator(".rodape").getByTestId("anuncio-whatsapp")).toHaveCount(1);
+  await expect(page.locator(".topo").getByTestId("anuncio-whatsapp")).toHaveCount(0);
 });
 
-test("siga para a próxima eleição abre o contato em nova aba", async ({ page }) => {
+test("aviso da próxima eleição: um botão só, abre o contato em nova aba", async ({ page }) => {
   await abrir(page, ANTES, false);
-  const link = page.locator(".rodape").getByTestId("seguir");
-  await expect(link).toHaveText(/Siga para a próxima eleição/);
+  await expect(page.getByTestId("seguir")).toHaveCount(1);
+  const link = page.getByTestId("seguir");
+  await expect(link).toHaveText(/Quero ser avisado na próxima eleição/);
   await expect(link).toHaveAttribute("href", /^https:\/\/wa\.me\/5511944650268\?text=/);
   await expect(link).toHaveAttribute("target", "_blank");
 });
 
-test("um só percentual de apuração, projeção marcada como estimativa", async ({ page }) => {
+test("um só percentual de apuração e nenhuma projeção na tela", async ({ page }) => {
   await abrir(page, DURANTE, true);
   await expect(page.getByTestId("estado")).toContainText("41,37% das seções apuradas");
   await expect(page.getByTestId("placar")).not.toContainText("41,4%");
   await expect(page.getByTestId("secoes-totalizadas")).toHaveCount(0);
-  await expect(page.getByTestId("painel-projecao")).toContainText("Projeção (estimativa)");
+  await expect(page.getByText("Projeção (estimativa)")).toHaveCount(0);
+  await expect(page.getByTestId("projecao-valor")).toHaveCount(0);
   // A simulação não traz brancos e nulos: a linha some em vez de mostrar 0.
   await expect(page.getByTestId("boletim")).not.toContainText("Brancos e nulos");
 });
@@ -211,4 +216,21 @@ test("resumo do boletim abaixo do placar só no celular, e seguir dentro do bole
     await expect(resumo).toBeHidden();
   }
   await expect(page.getByTestId("boletim").getByTestId("seguir")).toBeVisible();
+});
+
+test("celular: WhatsApp e busca logo abaixo do placar, sem repetir o placar no painel", async ({ page }, info) => {
+  await abrir(page, "2026-10-25T19:30:00-03:00", true);
+  const whats = page.getByTestId("whatsapp-placar");
+  const busca = page.getByTestId("busca-placar");
+  const repetido = page.getByTestId("painel-detalhe").locator(".det__bloco");
+  if (info.project.name === "celular") {
+    await expect(whats).toBeInViewport();
+    await expect(busca).toBeVisible();
+    await expect(repetido).toBeHidden();
+    await busca.click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+  } else {
+    await expect(whats).toBeHidden();
+    await expect(repetido).toBeVisible();
+  }
 });

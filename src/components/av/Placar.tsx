@@ -6,7 +6,6 @@ import type { CargoId } from "@/config/eleicao";
 import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import type { AreaMapa } from "@/lib/tse/mapa";
 import { compacto, coresDe, fotoUrl, horaBrasilia, INICIO_DIVULGACAO_MS, inteiro, nomeCurto, parcelas, pct1, pct2, relogio, type CandidatoBase } from "./util";
-import { formatarDataHora } from "@/lib/formatacao";
 
 export function Foto({ cargo, uf, c, cor, tam = 72 }: { cargo: CargoId; uf: string; c: CandidatoBase; cor: string; tam?: number }) {
   const url = fotoUrl(cargo, uf, c.sqcand);
@@ -67,7 +66,7 @@ export function Placar({ cargo, uf, resultado, agora, carregando }: Props) {
             <Foto cargo={cargo} uf={uf} c={c} cor={cores[i]} />
             <div className="placar__nome">
               <span className="placar__nomeLinha">
-                <strong>{nomeCurto(c.nome)}</strong>
+                <strong>{nomeCurto(c.nome, true)}</strong>
                 <span className="placar__num" style={{ color: cores[i] }}>
                   {c.partido ? `${c.partido} ` : ""}
                   {c.numero}
@@ -111,7 +110,7 @@ export function Placar({ cargo, uf, resultado, agora, carregando }: Props) {
           resultado.votos.eleitoradoFaltando !== null && <span key="faltam">faltam {compacto(resultado.votos.eleitoradoFaltando)} de eleitores</span>,
           t.atualizadoEmFonte && (
             <span key="fonte" className="placar__fonte" data-testid="atualizado-fonte">
-              atualizado pelo TSE em {formatarDataHora(t.atualizadoEmFonte)}
+              dados oficiais do TSE, atualizados às {horaBrasilia(Date.parse(t.atualizadoEmFonte))} · a página confere a cada 60 s
             </span>
           ),
         ]

@@ -6,14 +6,15 @@ import { useResultados } from "@/hooks/useResultados";
 import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import type { AreaMapa, RespostaMapa } from "@/lib/tse/mapa";
 import type { RespostaPrimeiroTurno } from "@/lib/tse/primeiroTurno";
-import { Anuncio, Busca, Cabecalho, LinhaDoTempo, Seguir } from "./Cabecalho";
+import { Anuncio, Busca, Cabecalho, LinhaDoTempo } from "./Cabecalho";
 import { Compartilhar } from "./Compartilhar";
+import { IconeApp } from "./IconesApps";
 import { Boletim, Presenca, ResumoBoletim, textoWhatsapp, viradas } from "./Exclusivos";
 import { useAgora, useHash, useHistorico, useJsonPeriodico, usePreferencia, usePresenca } from "./hooks";
 import { PainelDetalhe, PainelProjecao, projetar } from "./Laterais";
 import { Mapa, type Vista } from "./Mapa";
 import { ordenarPorNumero, Placar, PlacarGovernadores } from "./Placar";
-import { capitalizar, coresDe, parcelas, type CandidatoBase } from "./util";
+import { capitalizar, coresDe, nomeCurto, parcelas, type CandidatoBase } from "./util";
 
 interface Selecao {
   cargo: CargoId;
@@ -239,9 +240,6 @@ export function Aplicacao() {
         aviso={aviso}
         presenca={<Presenca agora={pessoas.agora} hoje={pessoas.hoje} />}
       />
-      <div className="faixa-anuncio">
-        <Anuncio compacto />
-      </div>
       <main id="conteudo" className="corpo">
         <div className="area-placar">
           {govBr ? (
@@ -250,6 +248,15 @@ export function Aplicacao() {
             <>
               <Placar cargo={cargo} uf={ufTopo} resultado={resultado} agora={agora} carregando={res.carregando} />
               <ResumoBoletim resultado={resultado} candidatos={candidatos} cores={cores} areas={areasMapa ?? []} nomeAreas={nomeFilhas} />
+              {/* No celular, as duas ações da noite ficam logo abaixo do placar. */}
+              <div className="acoes-placar">
+                <button type="button" className="acoes-placar__whats" onClick={mandarWhatsapp} data-testid="whatsapp-placar">
+                  <IconeApp app="whatsapp" tam={20} /> Mandar no WhatsApp
+                </button>
+                <button type="button" className="acoes-placar__busca" onClick={() => setBusca(true)} data-testid="busca-placar">
+                  <span aria-hidden="true">⌕</span> Veja sua cidade ou estado
+                </button>
+              </div>
             </>
           )}
           {res.desatualizado && <p className="alerta">Dados podem estar desatualizados: sem resposta nova do TSE há alguns minutos.</p>}
@@ -296,14 +303,15 @@ export function Aplicacao() {
             {!govBr &&
               candidatos.map((c, i) => (
                 <span key={c.numero}>
-                  <i className="legenda__cor" style={{ background: cores[i] }} /> {capitalizar(c.nome.split(" ")[0])}
+                  <i className="legenda__cor" style={{ background: cores[i] }} /> {nomeCurto(c.nome)}
                 </span>
               ))}
+            {comVotos > 0 && <span className="legenda__nota">cor mais forte = vantagem maior</span>}
           </div>
           <LinhaDoTempo agora={agora} apurando={apurando} historico={historico} />
         </section>
 
-        <PainelDetalhe key={`${cargo}:${uf}:${munTse ?? ""}`} {...detalhe} />
+        <PainelDetalhe key={`${cargo}:${uf}:${munTse ?? ""}`} {...detalhe} repeteOPlacar={!areaMun && !govBr} />
 
         {govBr ? null : (
           <PainelProjecao
@@ -334,7 +342,7 @@ export function Aplicacao() {
         )}
       </main>
       <footer className="rodape">
-        <Seguir />
+        <Anuncio />
         <span>
           <b>acompanhevotos</b> · feito por caiqueno
         </span>

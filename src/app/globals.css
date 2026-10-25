@@ -264,19 +264,9 @@ a {
   font-size: 13px;
 }
 
-.faixa-anuncio {
-  display: none;
-}
-/* Com contador, busca e patrocínio, o topo só cabe numa linha em telas bem largas. */
-@media (max-width: 1500px) {
-  .topo__anuncio {
-    display: none;
-  }
-  .faixa-anuncio {
-    display: flex;
-    justify-content: center;
-    padding: 0 12px 10px;
-  }
+/* O patrocínio fica no rodapé: nada entre o topo e o placar. */
+.rodape .patrocinio {
+  white-space: normal;
 }
 
 /* ---------------------------------------------------------------- corpo -- */
@@ -341,7 +331,8 @@ a {
 }
 .placar__linha {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  /* Nomes completos podem quebrar em duas linhas; o centro (percentual apurado e barra) mantém largura. */
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 1.3fr) minmax(0, 1fr);
   grid-template-areas: "esq centro dir";
   align-items: center;
   gap: 14px;
@@ -1690,6 +1681,58 @@ a {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+/* Ações logo abaixo do placar: só no celular, onde o boletim e a busca ficam longe do polegar. */
+.acoes-placar {
+  display: none;
+}
+.legenda__nota {
+  color: var(--suave);
+  font-size: 0.92em;
+}
+@media (max-width: 760px) {
+  .acoes-placar {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .acoes-placar button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .acoes-placar__whats {
+    justify-content: center;
+    border: 0;
+    background: #1f8f4e;
+    color: #fff;
+  }
+  .acoes-placar__busca {
+    border: 1px solid var(--marca);
+    background: var(--painel);
+    color: var(--suave);
+    font-weight: 500 !important;
+  }
+  .acoes-placar__busca span {
+    font-size: 20px;
+    color: var(--texto);
+  }
+  .busca-topo__texto {
+    display: none;
+  }
+  .busca-topo {
+    padding: 0 11px;
+  }
+  .det__bloco--repetido {
+    display: none;
+  }
 }
 
 /* Resumo do boletim abaixo do placar: só no celular, onde o boletim fica depois do mapa. */

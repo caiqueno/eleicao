@@ -7,7 +7,6 @@ import type { AreaMapa } from "@/lib/tse/mapa";
 import type { PrimeiroTurnoArea } from "@/lib/tse/primeiroTurno";
 import { CIDADES_EXTERIOR } from "@/data/exterior";
 import type { PontoHistorico } from "./hooks";
-import { Foto } from "./Placar";
 import { capitalizar, compacto, horaBrasilia, INICIO_DIVULGACAO_MS, nomeCurto, parcelas, pct1, pct2, inteiro, type CandidatoBase } from "./util";
 
 /* ------------------------------------------------------------------------ */
@@ -38,44 +37,6 @@ export function projetar(areasUf: AreaMapa[], pt: PrimeiroTurnoArea[], numeros: 
   return { a: soma / pesoTotal, cobertura: (pesoApurado / pesoTotal) * 100 };
 }
 
-function Grafico({ pontos, cores }: { pontos: PontoHistorico[]; cores: string[] }) {
-  const W = 260;
-  const H = 140;
-  const desvio = Math.max(1.5, ...pontos.flatMap((p) => [Math.abs(p.a - 50), p.p !== null ? Math.abs(p.p - 50) : 0])) + 0.3;
-  const y = (v: number) => H / 2 - ((v - 50) / desvio) * (H / 2 - 6);
-  const x = (pst: number) => 34 + (pst / 100) * (W - 40);
-  const linha = (f: (p: PontoHistorico) => number | null) =>
-    pontos
-      .filter((p) => f(p) !== null)
-      .map((p, i) => `${i ? "L" : "M"}${x(p.pst).toFixed(1)},${y(f(p) as number).toFixed(1)}`)
-      .join("");
-  const rot = (v: number) => `${v.toFixed(1).replace(".", ",")}%`;
-  return (
-    <svg className="grafico" viewBox={`0 0 ${W} ${H + 18}`} role="img" aria-label="Evolução da apuração por % de urnas apuradas">
-      {[50 + desvio * 0.8, 50, 50 - desvio * 0.8].map((v) => (
-        <g key={v}>
-          <line x1={34} x2={W - 6} y1={y(v)} y2={y(v)} className={v === 50 ? "grafico__meio" : "grafico__grade"} />
-          <text x={0} y={y(v) + 3} className="grafico__eixo">
-            {rot(v)}
-          </text>
-        </g>
-      ))}
-      <path d={linha((p) => p.a)} stroke={cores[0]} className="grafico__linha" />
-      <path d={linha((p) => 100 - p.a)} stroke={cores[1]} className="grafico__linha" />
-      <path d={linha((p) => p.p)} stroke={cores[0]} className="grafico__linha grafico__linha--proj" />
-      <path d={linha((p) => (p.p === null ? null : 100 - p.p))} stroke={cores[1]} className="grafico__linha grafico__linha--proj" />
-      <text x={34} y={H + 14} className="grafico__eixo">
-        0%
-      </text>
-      <text x={W / 2} y={H + 14} className="grafico__eixo" textAnchor="middle">
-        urnas apuradas
-      </text>
-      <text x={W - 6} y={H + 14} className="grafico__eixo" textAnchor="end">
-        100%
-      </text>
-    </svg>
-  );
-}
 
 interface PropsProjecao {
   cargo: CargoId;
@@ -101,41 +62,6 @@ export function PainelProjecao(p: PropsProjecao) {
   return (
     <aside className="lateral lateral--esq" aria-label="Projeção e comparação com o 1º turno" data-testid="painel-projecao">
       {p.topo}
-      <section className="bloco">
-        <h3 className="bloco__titulo">Projeção (estimativa)</h3>
-        <p className="bloco__sub">Cálculo do acompanhevotos sobre como a apuração pode terminar. Não é dado do TSE nem resultado oficial.</p>
-        <div className="proj">
-          {p.candidatos.map((c, i) => (
-            <div key={c.numero} className={`proj__cand proj__cand--${i ? "dir" : "esq"}`}>
-              <Foto cargo={p.cargo} uf={p.uf} c={c} cor={p.cores[i]} tam={36} />
-              <span>
-                <span className="proj__nome">{nomeCurto(c.nome)}</span>
-                <b style={{ color: p.cores[i] }} data-testid="projecao-valor">
-                  {p.projecao ? `≈ ${pct1(i === 0 ? p.projecao.a : 100 - p.projecao.a)}` : "—"}
-                </b>
-                {p.projecao && <small className="proj__rotulo">estimado</small>}
-              </span>
-            </div>
-          ))}
-        </div>
-        {p.cargo !== "presidente" ? (
-          <p className="bloco__status">A projeção é calculada só para Presidente.</p>
-        ) : !p.apurando ? (
-          <p className="bloco__status">
-            <span className="ponto" /> {aviso}
-          </p>
-        ) : p.projecao ? (
-          <p className="bloco__status">
-            <span className="ponto ponto--vivo" /> Baseada em {pct1(p.projecao.cobertura)} dos votos esperados
-          </p>
-        ) : null}
-        <Grafico pontos={p.historico} cores={p.cores} />
-        <p className="bloco__nota">
-          Linhas: parcela de cada candidato nos votos apurados (contínua) e projeção (tracejada), nos momentos em que esta tela
-          consultou o TSE. Método: cada UF pesa pelos votos válidos do 1º turno; sem votos apurados, entra com o resultado do 1º turno
-          entre os dois.
-        </p>
-      </section>
       <section className="bloco">
         <h3 className="bloco__titulo">O que mudou desde o 1º turno</h3>
         <p className="bloco__sub">Parcela de {nomeCurto(p.candidatos[0]?.nome ?? "")} entre os dois, em pontos</p>
@@ -201,6 +127,8 @@ interface PropsDetalhe {
   consultadoEm: string | null;
   erro: string | null;
   subtitulo?: string;
+  /** O resultado desta área já está no placar; no celular o bloco some para não repetir. */
+  repeteOPlacar?: boolean;
 }
 
 function Lider({ area, candidatos, cores }: { area: AreaMapa; candidatos: CandidatoBase[]; cores: string[] }) {
@@ -273,7 +201,7 @@ export function PainelDetalhe(p: PropsDetalhe) {
         )}
       </header>
 
-      <section className="det__bloco">
+      <section className={`det__bloco${p.repeteOPlacar ? " det__bloco--repetido" : ""}`}>
         <h3 className="det__rotulo">
           {p.cargo === "presidente" ? "Presidente" : "Governador"}{" "}
           {p.tipoFilhas === "exterior" || p.sigla === "ZZ" ? "no exterior" : p.titulo === "Governadores" ? "· 2º turno nos estados" : `· ${p.titulo}`}
