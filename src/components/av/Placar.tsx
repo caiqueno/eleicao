@@ -65,6 +65,37 @@ export function ordenarPorNumero<T extends { numero: string }>(l: T[]): T[] {
   return [...l].sort((a, b) => Number(a.numero) - Number(b.numero));
 }
 
+export type Anuncio =
+  | { tipo: "eleito" | "frente"; indice: number; nome: string; texto: string }
+  | { tipo: "empate"; texto: string };
+
+/**
+ * Faixa de destaque do placar. "Venceu" só aparece quando o próprio TSE marca o
+ * candidato como eleito; antes disso, apenas quem está à frente nos votos já
+ * apurados, sempre como resultado parcial.
+ */
+export function anuncioDoPlacar(resultado: ResultadoSegundoTurno, uf: string): Anuncio | null {
+  const cands = ordenarPorNumero(resultado.candidatos);
+  const ie = cands.findIndex((c) => c.eleito);
+  if (ie >= 0) {
+    const nome = nomeCurto(cands[ie].nome, true);
+    return { tipo: "eleito", indice: ie, nome, texto: `venceu o 2º turno para ${resultado.cargoNome}, segundo o TSE` };
+  }
+  const t = resultado.totalizacao;
+  if ((t.secoesTotalizadas ?? 0) === 0 || cands.length !== 2) return null;
+  const [va, vb] = cands.map((c) => c.votos ?? 0);
+  const apuradas = `${pct2(t.percentualSecoesTotalizadas)} das seções apuradas`;
+  if (va === vb) return { tipo: "empate", texto: `Empate nos votos apurados até agora · resultado parcial, ${apuradas}` };
+  const i = va > vb ? 0 : 1;
+  const onde = uf === "br" ? "" : ` · ${resultado.abrangenciaNome}`;
+  return {
+    tipo: "frente",
+    indice: i,
+    nome: nomeCurto(cands[i].nome, true),
+    texto: `está à frente por ${inteiro(Math.abs(va - vb))} votos${onde} · resultado parcial, ${apuradas}`,
+  };
+}
+
 export function Placar({ cargo, uf, resultado, agora, carregando }: Props) {
   if (!resultado) {
     return (
@@ -88,8 +119,21 @@ export function Placar({ cargo, uf, resultado, agora, carregando }: Props) {
   else if (antes) titulo = `A apuração começa em ${relogio(INICIO_DIVULGACAO_MS - agora)}`;
   else titulo = "Aguardando os primeiros números do TSE";
 
+  const anuncio = anuncioDoPlacar(resultado, uf);
+
   return (
     <section className="placar" data-testid="placar" aria-label={`Placar de ${resultado.cargoNome}, ${resultado.abrangenciaNome}`}>
+      {anuncio && (
+        <p className={`placar__anuncio placar__anuncio--${anuncio.tipo}`} data-testid="anuncio" aria-live="polite">
+          {anuncio.tipo === "empate" ? (
+            anuncio.texto
+          ) : (
+            <>
+              <b style={{ color: anuncio.tipo === "eleito" ? undefined : cores[anuncio.indice] }}>{anuncio.nome}</b> {anuncio.texto}
+            </>
+          )}
+        </p>
+      )}
       <div className="placar__linha">
         {cands.map((c, i) => (
           <div key={c.numero} className={`placar__cand placar__cand--${i === 0 ? "esq" : "dir"}`} data-testid="candidato">
