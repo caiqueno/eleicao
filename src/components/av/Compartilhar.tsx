@@ -6,7 +6,8 @@ import { textoWhatsapp } from "./Exclusivos";
 import { IconeApp } from "./IconesApps";
 import { coresDe, horaBrasilia, INICIO_DIVULGACAO_MS, nomeCurto, parcelas, pct2, type CandidatoBase } from "./util";
 
-export const SITE = "www.acompanhevotos.com.br";
+// Endereço da Vercel enquanto o DNS do acompanhevotos.com.br está fora (25/10). Voltar para "www.acompanhevotos.com.br" quando o domínio resolver.
+export const SITE = "acompanhevotos.vercel.app";
 
 export type Formato = "stories" | "feed";
 const TAMANHOS: Record<Formato, [number, number]> = { stories: [1080, 1920], feed: [1080, 1350] };

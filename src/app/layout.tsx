@@ -3,7 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.acompanhevotos.com.br"),
+  metadataBase: new URL("https://acompanhevotos.vercel.app"),
   openGraph: {
     type: "website",
     locale: "pt_BR",
