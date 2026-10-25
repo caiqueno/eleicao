@@ -66,6 +66,10 @@ A página carrega o Vercel Web Analytics (sem cookies e sem dados pessoais) só 
 Para ver os números: Vercel → projeto `www.acompanhevotos` → aba **Analytics** (clicar em **Enable** uma vez).
 Lá aparecem visitantes, visualizações, páginas, países, navegadores e tipo de dispositivo (celular/desktop).
 
+## Pessoas acompanhando agora
+
+O contador do topo conta os navegadores que mandaram um sinal nos últimos 100 segundos (um sinal a cada 45 s com a aba visível). Cada navegador usa um id aleatório; o servidor não grava IP nem dados pessoais. A contagem fica num Redis do Upstash, criado pela Vercel em **Storage → Create Database → Upstash for Redis** e conectado ao projeto. A integração cria `KV_REST_API_URL` e `KV_REST_API_TOKEN` (ou `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`). Sem essas variáveis o contador some da tela, sem número inventado. Só hosts `*.upstash.io` por HTTPS são aceitos.
+
 ## Manutenção
 
 - Para outra eleição, atualize `src/config/eleicao.ts` (ciclo, pleito, códigos de eleição e cargo) com valores

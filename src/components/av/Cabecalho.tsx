@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CargoId } from "@/config/eleicao";
 import { UFS } from "@/config/eleicao";
 import { capitalizar, horaBrasilia, INICIO_DIVULGACAO_MS, type CandidatoBase } from "./util";
@@ -88,6 +88,7 @@ interface PropsCab {
   aoTema: () => void;
   aoCompartilhar: () => void;
   aviso: string | null;
+  presenca?: ReactNode;
 }
 
 export function Cabecalho(p: PropsCab) {
@@ -98,13 +99,13 @@ export function Cabecalho(p: PropsCab) {
   return (
     <header className="topo">
       <a className="logo" href="#presidente" aria-label="acompanhevotos, início">
-        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="9" width="18" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M8 9V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V9" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="m9.5 6 1.7 1.6L14.5 4.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M7 13h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <svg className="logo__marca" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+          <rect x="1" y="1" width="24" height="24" rx="7" fill="var(--marca)" />
+          <path d="M7.5 13.5l3.6 3.6L18.8 9" fill="none" stroke="var(--marca-tinta)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span>acompanhevotos</span>
+        <span className="logo__nome">
+          acompanhe<b>votos</b>
+        </span>
       </a>
       <div className="abas" role="tablist" aria-label="Cargo">
         {(["presidente", "governador"] as const).map((c) => (
@@ -121,6 +122,7 @@ export function Cabecalho(p: PropsCab) {
           </button>
         ))}
       </div>
+      {p.presenca}
       <div className="topo__anuncio">
         <Anuncio />
       </div>

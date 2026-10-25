@@ -228,3 +228,57 @@ export function useHash(): [string, (h: string) => void] {
   };
   return [hash, definir];
 }
+
+/* Pessoas com a página aberta agora: sinal a cada 45 s enquanto a aba está visível. */
+function idDoNavegador(): string {
+  try {
+    const salvo = localStorage.getItem("av:id");
+    if (salvo && /^[a-f0-9]{32}$/.test(salvo)) return salvo;
+  } catch {
+    /* sem armazenamento: id só desta aba */
+  }
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  const id = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  try {
+    localStorage.setItem("av:id", id);
+  } catch {
+    /* idem */
+  }
+  return id;
+}
+
+export function usePresenca(intervaloS = 45): number | null {
+  const [agora, setAgora] = useState<number | null>(null);
+  useEffect(() => {
+    const id = idDoNavegador();
+    let vivo = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const enviar = async () => {
+      if (timer) clearTimeout(timer);
+      if (document.visibilityState === "visible") {
+        try {
+          const r = await fetch("/api/presenca", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+            cache: "no-store",
+          });
+          const j = (await r.json()) as { agora?: number | null };
+          if (vivo && r.ok) setAgora(typeof j.agora === "number" ? j.agora : null);
+        } catch {
+          /* sem conexão: mantém o último número */
+        }
+      }
+      if (vivo) timer = setTimeout(enviar, intervaloS * 1000);
+    };
+    const aoVoltar = () => document.visibilityState === "visible" && void enviar();
+    document.addEventListener("visibilitychange", aoVoltar);
+    void enviar();
+    return () => {
+      vivo = false;
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", aoVoltar);
+    };
+  }, [intervaloS]);
+  return agora;
+}
