@@ -18,6 +18,6 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(resposta, {
     status: STATUS[resposta.estado],
     // Cache curto na CDN da Vercel; o horário real dos dados está no corpo.
-    headers: { "Cache-Control": "public, s-maxage=5, stale-while-revalidate=5" },
+    headers: { "Cache-Control": "public, s-maxage=10, stale-while-revalidate=20" },
   });
 }
