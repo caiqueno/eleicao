@@ -60,6 +60,9 @@ deploy de produção; PRs geram deploys de pré-visualização. Configuração: 
 
 Detalhes, grau de confiança e o que foi verificado: [docs/FONTE_TSE.md](docs/FONTE_TSE.md).
 
+Desenhos dos mapas (`public/mapas/`): malha municipal do IBGE publicada em
+[tbrugz/geodata-br](https://github.com/tbrugz/geodata-br) (CC0), arquivos `geojson/geojs-XX-mun.json`.
+
 ## Contagem de acessos
 
 A página carrega o Vercel Web Analytics (sem cookies e sem dados pessoais) só quando roda na Vercel.
@@ -76,6 +79,9 @@ O contador do topo conta os navegadores que mandaram um sinal nos últimos 100 s
   lidos do `ele-c.json` do TSE. A aplicação confere em tempo de execução se a eleição é de 2º turno.
 - O formato do arquivo de resultado está em `src/lib/tse/resultado.ts`; os testes com dados simulados ficam em
   `tests/unit/tse/`.
+- Para refazer os mapas, baixe os `geojs-XX-mun.json` numa pasta e rode
+  `node scripts/mapas/gerar.mjs <pasta>`. O teste `tests/unit/mapas/` confere que todo município tem desenho e
+  que os municípios cobrem o estado inteiro.
 
 ## Documentação
 

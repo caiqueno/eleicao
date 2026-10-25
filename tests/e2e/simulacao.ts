@@ -159,7 +159,7 @@ export async function simularApi(page: Page, apurando: boolean, pessoas: number 
       if (uf === "br" && url.searchParams.get("cargo") === "governador") return rota.fulfill({ json: mapaGovernadores(apurando) });
       if (uf === "br") return rota.fulfill({ json: mapaBr(apurando) });
       if (uf === "zz") return rota.fulfill({ json: mapaExterior(apurando) });
-      const ibge2 = { sp: "35", ba: "29", df: "53", am: "13" }[uf] ?? "35";
+      const ibge2 = { sp: "35", ba: "29", df: "53", am: "13", go: "52", mt: "51", rj: "33" }[uf] ?? "35";
       return rota.fulfill({ json: mapaUf(uf, ibge2, apurando) });
     }
     if (url.pathname === "/api/primeiro-turno") return rota.fulfill({ json: primeiroTurno() });
