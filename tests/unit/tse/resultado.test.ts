@@ -122,24 +122,33 @@ describe("normalizarResultado — cenários", () => {
     expect(r.candidatos.map((c) => c.numero)).toEqual(["22", "11"]);
   });
 
-  it("carg sem candidatos → lista vazia, sem erro", () => {
-    const r = norm("simulado-sem-candidatos.json");
-    expect(r.candidatos).toEqual([]);
-    expect(r.totalizacao.secoesTotal).toBe(1000);
+  it("carg sem candidatos → inválido (2º turno exige 2)", () => {
+    expect(() => norm("simulado-sem-candidatos.json")).toThrow(RespostaInvalida);
   });
 
-  it("carg vazio → lista vazia", () => {
+  it("carg vazio → inválido", () => {
     const d = fixture("simulado-parcial.json");
     d.carg = [];
-    expect(normalizarResultado(d, PRES, "br", URL).candidatos).toEqual([]);
+    expect(() => normalizarResultado(d, PRES, "br", URL)).toThrow(/2 candidatos/);
   });
 
-  it("3+ candidatos: ordem por votos e soma dos percentuais ≈ 100", () => {
-    const r = norm("simulado-tres-candidatos.json");
-    expect(r.candidatos.map((c) => c.numero)).toEqual(["22", "11", "33", "44"]);
-    expect(r.candidatos.map((c) => c.percentualCalculado)).toEqual([50, 33.333, 16.667, 0]);
-    expect(soma(r.candidatos.map((c) => c.percentualCalculado))).toBeCloseTo(100, 9);
-    expect(r.candidatos[3].votos).toBe(0);
+  it("4 candidatos → inválido (não é 2º turno)", () => {
+    expect(() => norm("simulado-tres-candidatos.json")).toThrow(/2 candidatos; o arquivo tem 4/);
+  });
+
+  it("sem cdabr → inválido", () => {
+    const d = fixture("simulado-parcial.json");
+    delete d.cdabr;
+    expect(() => normalizarResultado(d, PRES, "br", URL)).toThrow(/cdabr/);
+  });
+
+  it("empate em votos → ordem alfabética do nome", () => {
+    const d = fixture("simulado-parcial.json");
+    for (const p of d.carg[0].agr.flatMap((a: { par: unknown[] }) => a.par)) {
+      for (const c of (p as { cand: { vap: string }[] }).cand) c.vap = "0";
+    }
+    const nomes = normalizarResultado(d, PRES, "br", URL).candidatos.map((c) => c.nome);
+    expect(nomes).toEqual([...nomes].sort((a, b) => a.localeCompare(b, "pt-BR")));
   });
 
   it("governador em UF válida", () => {

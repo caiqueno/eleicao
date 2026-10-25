@@ -34,13 +34,21 @@ describe("GET /api/resultados", () => {
     expect(f).not.toHaveBeenCalled();
   });
 
-  it("padrão presidente/br, UF em maiúsculas aceita; ok → 200 com cache curto", async () => {
+  it("UF em maiúsculas e parâmetros desconhecidos → 400 (não furam o cache)", async () => {
+    const f = vi.fn();
+    vi.stubGlobal("fetch", f);
+    expect((await getResultados(req("?uf=BR"))).status).toBe(400);
+    expect((await getResultados(req("?cargo=presidente&uf=br&x=1"))).status).toBe(400);
+    expect(f).not.toHaveBeenCalled();
+  });
+
+  it("padrão presidente/br; ok → 200 com cache curto", async () => {
     const f = fetchFalso({
       [URL_CONFIG_TSE]: responder(CONFIG),
       [urlResultadoTse("6258", "1", "br")]: responder(gerarJws(fixture("simulado-parcial.json"))),
     });
     vi.stubGlobal("fetch", f);
-    const res = await getResultados(req("?uf=BR"));
+    const res = await getResultados(req(""));
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toContain("s-maxage=15");
     const corpo = await res.json();

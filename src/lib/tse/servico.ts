@@ -2,12 +2,13 @@ import { CARGOS, ELEICAO_CONFIG, TSE_AMBIENTE, UFS, type CargoId } from "@/confi
 import type { OpcaoAbrangencia, RespostaApi } from "@/lib/tipos";
 import { eleicoesSegundoTurno, opcoesAbrangencia } from "./configuracao";
 import { decodificarArquivoTse } from "./decodificar";
-import { buscarTexto, ErroFonte, urlTse, type OpcoesBusca } from "./http";
+import { obterArquivo } from "./cache";
+import { ErroFonte, urlTse, type OpcoesBusca } from "./http";
 import { normalizarResultado, RespostaInvalida } from "./resultado";
 
-/** Cache no servidor: config muda raramente; resultado é consultado no máximo a cada 30 s. */
-export const CACHE_CONFIG_S = 300;
-export const CACHE_RESULTADO_S = 30;
+/** Cache no servidor (cache.ts): config muda raramente; resultado no máximo a cada 30 s por instância. */
+export const CACHE_CONFIG_MS = 300_000;
+export const CACHE_RESULTADO_MS = 30_000;
 
 export const URL_CONFIG = urlTse(TSE_AMBIENTE, "comum", "config", "ele-c.json");
 
@@ -32,7 +33,7 @@ export function eUfValida(v: unknown): v is string {
 }
 
 async function carregarEleicoes(opcoes: OpcoesBusca) {
-  const texto = await buscarTexto(URL_CONFIG, { revalidar: CACHE_CONFIG_S, ...opcoes });
+  const { texto } = await obterArquivo(URL_CONFIG, CACHE_CONFIG_MS, opcoes);
   return eleicoesSegundoTurno(decodificarArquivoTse(texto));
 }
 
@@ -40,8 +41,24 @@ export async function listarAbrangencias(opcoes: OpcoesBusca = {}): Promise<Opca
   return opcoesAbrangencia(await carregarEleicoes(opcoes));
 }
 
-function resposta(estado: RespostaApi["estado"], mensagem: string | null, resultado: RespostaApi["resultado"] = null): RespostaApi {
-  return { estado, mensagem, consultadoEm: new Date().toISOString(), resultado };
+function resposta(
+  estado: RespostaApi["estado"],
+  mensagem: string | null,
+  resultado: RespostaApi["resultado"] = null,
+  consultadoEm: string = new Date().toISOString(),
+): RespostaApi {
+  return { estado, mensagem, consultadoEm, resultado };
+}
+
+/**
+ * Extensão em que o TSE publicou o resultado (2026: JWS). Lembrada após o
+ * primeiro sucesso para não gerar 404 desnecessários na outra extensão.
+ */
+let extensaoConfirmada: "jws" | "json" | null = null;
+
+/** Só para testes: esquece a extensão confirmada. */
+export function reiniciarExtensao() {
+  extensaoConfirmada = null;
 }
 
 export async function consultarResultado(
@@ -66,16 +83,20 @@ export async function consultarResultado(
     return resposta("nao-suportado", `Não há 2º turno para ${cargo.nome} em ${UFS[uf] ?? uf.toUpperCase()}.`);
   }
 
-  // Em 2026 o TSE publica o resultado como JWS; se não existir, tenta o mesmo arquivo em JSON simples.
-  let url = urlResultado(eleicao.codigoEleicao, cargo.codigoCargo, uf, "jws");
-  let texto: string;
+  const extensoes: ("jws" | "json")[] = extensaoConfirmada ? [extensaoConfirmada] : ["jws", "json"];
+  let url = "";
+  let arquivo;
   try {
-    try {
-      texto = await buscarTexto(url, { revalidar: CACHE_RESULTADO_S, ...opcoes });
-    } catch (erro) {
-      if (!(erro instanceof ErroFonte && erro.tipo === "nao-encontrado")) throw erro;
-      url = urlResultado(eleicao.codigoEleicao, cargo.codigoCargo, uf, "json");
-      texto = await buscarTexto(url, { revalidar: CACHE_RESULTADO_S, ...opcoes });
+    for (const [i, ext] of extensoes.entries()) {
+      url = urlResultado(eleicao.codigoEleicao, cargo.codigoCargo, uf, ext);
+      try {
+        arquivo = await obterArquivo(url, CACHE_RESULTADO_MS, opcoes);
+        extensaoConfirmada = ext;
+        break;
+      } catch (erro) {
+        const ultimo = i === extensoes.length - 1;
+        if (ultimo || !(erro instanceof ErroFonte && erro.tipo === "nao-encontrado")) throw erro;
+      }
     }
   } catch (erro) {
     if (erro instanceof ErroFonte && erro.tipo === "nao-encontrado") {
@@ -86,9 +107,11 @@ export async function consultarResultado(
     }
     return resposta("erro-fonte", mensagemErro(erro, "resultado"));
   }
+  if (!arquivo) return resposta("erro-fonte", "Não foi possível consultar o resultado do TSE.");
 
   try {
-    return resposta("ok", null, normalizarResultado(decodificarArquivoTse(texto), cargo, uf, url));
+    const resultado = normalizarResultado(decodificarArquivoTse(arquivo.texto), cargo, uf, url);
+    return resposta("ok", null, resultado, arquivo.obtidoEm);
   } catch (erro) {
     const motivo = erro instanceof RespostaInvalida ? erro.message : "estrutura não reconhecida";
     return resposta("invalido", `A resposta do TSE não passou na validação (${motivo}).`);

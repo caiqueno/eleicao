@@ -1,5 +1,5 @@
 import type { Totalizacao as DadosTotalizacao, VotosGerais } from "@/lib/tipos";
-import { formatarHora, formatarNumero, formatarPercentual, limitarPercentual } from "@/lib/formatacao";
+import { formatarDataHora, formatarNumero, formatarPercentual, limitarPercentual } from "@/lib/formatacao";
 
 interface Props {
   totalizacao: DadosTotalizacao;
@@ -54,7 +54,7 @@ export function Totalizacao({ totalizacao, votos }: Props) {
       </p>
       <p className="totalizacao__fonte" data-testid="atualizado-fonte">
         {totalizacao.atualizadoEmFonte
-          ? `Atualizado pelo TSE às ${formatarHora(totalizacao.atualizadoEmFonte)}`
+          ? `Atualizado pelo TSE em ${formatarDataHora(totalizacao.atualizadoEmFonte)} (horário de Brasília)`
           : "Horário da totalização não informado pelo TSE"}
       </p>
       {totalizacao.finalizada && (

@@ -132,7 +132,7 @@ a {
 .pagina {
   max-width: 960px;
   margin: 0 auto;
-  padding: 0 max(var(--gutter), env(safe-area-inset-left)) 0 max(var(--gutter), env(safe-area-inset-right));
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
   padding-bottom: calc(var(--altura-acoes) + env(safe-area-inset-bottom) + 16px);
 }
 

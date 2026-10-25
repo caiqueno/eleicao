@@ -27,12 +27,17 @@ describe("urlTse", () => {
 });
 
 describe("buscarTexto", () => {
-  it("devolve o corpo e manda tempo limite, Accept e revalidate", async () => {
+  it("recusa arquivo maior que 5 MB", async () => {
+    const f = vi.fn(async () => new Response("x", { status: 200, headers: { "content-length": String(6 * 1024 * 1024) } }));
+    await expect(buscarTexto(URL_OK, { fetchImpl: f })).rejects.toMatchObject({ tipo: "formato" });
+  });
+
+  it("devolve o corpo e manda tempo limite, Accept e no-store", async () => {
     const f = vi.fn(async () => new Response("conteúdo", { status: 200 }));
-    await expect(buscarTexto(URL_OK, { fetchImpl: f, revalidar: 7 })).resolves.toBe("conteúdo");
-    const init = (f.mock.calls[0] as unknown[])[1] as RequestInit & { next: { revalidate: number } };
+    await expect(buscarTexto(URL_OK, { fetchImpl: f })).resolves.toBe("conteúdo");
+    const init = (f.mock.calls[0] as unknown[])[1] as RequestInit;
     expect(init.signal).toBeInstanceOf(AbortSignal);
-    expect(init.next.revalidate).toBe(7);
+    expect(init.cache).toBe("no-store");
     expect((init.headers as Record<string, string>).Accept).toContain("application/json");
   });
 

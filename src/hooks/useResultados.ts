@@ -181,6 +181,8 @@ class MonitorResultados {
     const parametros = new URLSearchParams({ cargo: this.cargo, uf: this.uf });
     let resposta: RespostaApi | null = null;
     let erroRede: string | null = null;
+    /** Idade dos dados ao sair do servidor: hora da resposta − hora do download no TSE. */
+    let idadeServidorMs = 0;
 
     try {
       const r = await fetch(`/api/resultados?${parametros.toString()}`, {
@@ -191,6 +193,11 @@ class MonitorResultados {
       const corpo: unknown = await r.json().catch(() => null);
       if (ehRespostaApi(corpo)) {
         resposta = corpo;
+        const horaResposta = Date.parse(r.headers.get("date") ?? "");
+        const horaDownload = Date.parse(corpo.consultadoEm);
+        if (Number.isFinite(horaResposta) && Number.isFinite(horaDownload)) {
+          idadeServidorMs = Math.max(0, horaResposta - horaDownload);
+        }
       } else {
         erroRede = `Resposta inesperada do servidor (HTTP ${r.status}).`;
       }
@@ -207,6 +214,16 @@ class MonitorResultados {
     if (!this.ativo || this.emVoo !== controle) return;
     this.emVoo = null;
 
+    const anteriorValida = this.snapshot.ultimaValida;
+    // Depois de já haver resultado, um "sem dados" é tratado como falha passageira da fonte
+    // (arquivo sendo regravado, CDN): mantém os dados na tela com aviso.
+    if (resposta && resposta.estado === "sem-dados" && anteriorValida) {
+      resposta = {
+        ...resposta,
+        estado: "erro-fonte",
+        mensagem: "O TSE deixou de responder o arquivo desta seleção temporariamente.",
+      };
+    }
     const estado: EstadoConsulta = resposta ? resposta.estado : "erro-fonte";
     const sucesso = resposta !== null && (estado === "ok" || estado === "sem-dados" || estado === "nao-suportado");
     const anterior = this.snapshot;
@@ -219,7 +236,7 @@ class MonitorResultados {
         : sucesso
           ? null // o TSE informou que não há dados para esta seleção
           : anterior.ultimaValida,
-      ultimaConsultaOkMs: sucesso ? Date.now() : anterior.ultimaConsultaOkMs,
+      ultimaConsultaOkMs: sucesso ? Date.now() - idadeServidorMs : anterior.ultimaConsultaOkMs,
       consultadoEm: sucesso && resposta ? resposta.consultadoEm : anterior.consultadoEm,
       carregando: false,
       atualizando: false,

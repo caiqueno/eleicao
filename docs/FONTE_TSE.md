@@ -191,9 +191,16 @@ A eleição `6258` tem `t="2"` e `abr` = br, cargo 1. **ALTA.**
 - `dados-simplificados/*-r.json` não existe em 2026 (404).
 - Lista de UFs no `abr` da eleição 6260 (am, rn, df, es, ac, to) e `t="2"` em 6258/6260, lidas no ele-c.json real.
 
+**VERIFICADO NO DEPLOY (25/10/2026 ~13:52 UTC, função Vercel em gru1):**
+- `ele2026/6258/dados/br/br-c0001-e006258-u.jws`, `.../sp/sp-c0001-e006258-u.jws` e
+  `ele2026/6260/dados/df/df-c0003-e006260-u.jws` respondem 200 em JWS; o conteúdo passou na validação da aplicação
+  (abrangência, 2 candidatos, campos `s`, `e`, `v`, `carg[].agr[].par[].cand[]`). Antes do fim da votação os
+  arquivos trazem 0 seções totalizadas e `dt`/`ht` vazios, como o TSE descreve.
+- O conteúdo bruto não foi guardado neste repositório; a verificação foi feita pela própria rota `/api/resultados`.
+
 **NÃO VERIFICADO (testar antes de usar):**
-- HTTP 200 e conteúdo real de `br-c0001-e006258-u.json`, `<uf>-c0003-e006260-u.json` e `-ab.json` no ambiente oficial.
-- Se o resultado é servido em `.json`, em `.jws` ou nos dois, e com qual Content-Type.
+- Se o resultado também existe em `.json` (a aplicação tenta `.jws` primeiro) e o conteúdo de `-ab.json`.
+- Presença do campo `ele` no arquivo `-u` (validado só se existir).
 - Definições oficiais dos campos do EA20 (PDF não lido); significado de `f`, `mu.c`, `cp.tp`, `e.est`.
 - Nome exato do arquivo de eleitos `-e`.
 - Headers reais (`cache-control`, `last-modified`, `etag`) dos arquivos de resultado.

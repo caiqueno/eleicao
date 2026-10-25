@@ -64,6 +64,11 @@ interface Aviso {
   texto?: string;
 }
 
+/** Só aceita links para o site do TSE. */
+function linkFonte(url: string | undefined): string {
+  return url && url.startsWith("https://resultados.tse.jus.br/") ? url : "https://resultados.tse.jus.br";
+}
+
 function avisoDoEstado(
   estado: EstadoTela,
   r: UseResultados,
@@ -270,7 +275,6 @@ export function Painel() {
         data-estado={estado}
         data-atualizando={r.atualizando ? "true" : "false"}
         data-desatualizado={r.desatualizado ? "true" : "false"}
-        aria-live="polite"
         aria-busy={r.atualizando}
       >
         {aviso && (
@@ -314,7 +318,7 @@ export function Painel() {
       )}
 
       <p className="consulta" data-testid="consultado-em">
-        {r.consultadoEm ? `Consultado às ${formatarHora(r.consultadoEm)}` : "Nenhuma consulta bem-sucedida ainda"}
+        {r.consultadoEm ? `Consultado no TSE às ${formatarHora(r.consultadoEm)} (horário de Brasília)` : "Nenhuma consulta bem-sucedida ainda"}
         <span className="consulta__auto">
           {" "}
           · atualização automática a cada {INTERVALO_SEGUNDOS} s com a página aberta
@@ -327,7 +331,7 @@ export function Painel() {
       <footer className="rodape">
         <p>
           Fonte: Tribunal Superior Eleitoral (TSE) —{" "}
-          <a href={resultado?.fonteUrl || "https://resultados.tse.jus.br"} target="_blank" rel="noopener noreferrer">
+          <a href={linkFonte(resultado?.fonteUrl)} target="_blank" rel="noopener noreferrer">
             resultados.tse.jus.br
           </a>
         </p>

@@ -36,7 +36,8 @@ export function normalizarResultado(
   if (!eObj(dados)) throw new RespostaInvalida("Conteúdo não é um objeto JSON");
 
   const cdabr = texto(dados.cdabr)?.toLowerCase();
-  if (cdabr && cdabr !== uf) {
+  if (!cdabr) throw new RespostaInvalida("Arquivo sem abrangência (cdabr)");
+  if (cdabr !== uf) {
     throw new RespostaInvalida(`Abrangência divergente: esperado ${uf}, recebido ${cdabr}`);
   }
   const ele = codigo(dados.ele);
@@ -79,6 +80,11 @@ export function normalizarResultado(
         }
       }
     }
+  }
+
+  // No 2º turno a disputa é sempre entre exatamente dois candidatos.
+  if (candidatos.length !== 2) {
+    throw new RespostaInvalida(`2º turno deve ter 2 candidatos; o arquivo tem ${candidatos.length}`);
   }
 
   const somaVotos = candidatos.every((c) => c.votos !== null)

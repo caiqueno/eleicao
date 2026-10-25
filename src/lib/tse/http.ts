@@ -11,6 +11,8 @@ export class ErroFonte extends Error {
   }
 }
 
+/** Limite de segurança: os arquivos usados têm dezenas de KB. */
+const TAMANHO_MAXIMO = 5 * 1024 * 1024;
 const HOST_PERMITIDO = new URL(TSE_BASE_URL).host;
 /** Segmentos de caminho aceitos: só letras minúsculas, dígitos, hífen, ponto e sublinhado. */
 const SEGMENTO_SEGURO = /^[a-z0-9._-]+$/;
@@ -34,8 +36,6 @@ export function urlTse(...segmentos: string[]): string {
 
 export interface OpcoesBusca {
   timeoutMs?: number;
-  /** Segundos de cache no Data Cache do Next.js. */
-  revalidar?: number;
   fetchImpl?: typeof fetch;
 }
 
@@ -45,14 +45,15 @@ export async function buscarTexto(url: string, opcoes: OpcoesBusca = {}): Promis
   if (destino.host !== HOST_PERMITIDO || destino.protocol !== "https:") {
     throw new Error("Destino não permitido");
   }
-  const { timeoutMs = 8000, revalidar = 30, fetchImpl = fetch } = opcoes;
+  const { timeoutMs = 8000, fetchImpl = fetch } = opcoes;
   let resposta: Response;
   try {
     resposta = await fetchImpl(url, {
       signal: AbortSignal.timeout(timeoutMs),
       headers: { Accept: "application/json, text/plain, */*" },
-      next: { revalidate: revalidar },
-    } as RequestInit);
+      // Sem o Data Cache do Next: o cache fica em cache.ts, que sabe a hora real do download.
+      cache: "no-store",
+    });
   } catch (erro) {
     const nome = (erro as { name?: string })?.name;
     if (nome === "TimeoutError" || nome === "AbortError") {
@@ -66,5 +67,9 @@ export async function buscarTexto(url: string, opcoes: OpcoesBusca = {}): Promis
   if (!resposta.ok) {
     throw new ErroFonte(`TSE respondeu HTTP ${resposta.status}`, "http", resposta.status);
   }
-  return resposta.text();
+  const tamanho = Number(resposta.headers.get("content-length") ?? 0);
+  if (tamanho > TAMANHO_MAXIMO) throw new ErroFonte("Arquivo do TSE maior que o esperado", "formato");
+  const texto = await resposta.text();
+  if (texto.length > TAMANHO_MAXIMO) throw new ErroFonte("Arquivo do TSE maior que o esperado", "formato");
+  return texto;
 }

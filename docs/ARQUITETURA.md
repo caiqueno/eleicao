@@ -29,7 +29,8 @@ A interface só conhece o formato normalizado de `src/lib/tipos.ts`. Os detalhes
 
 - **Só 2º turno:** a eleição só é aceita se o `ele-c.json` do TSE disser `t = "2"` dentro do pleito 3221.
   Um arquivo cujo campo `ele` não seja o código do 2º turno é rejeitado.
-- **Abrangência e cargo conferidos:** `cdabr` e `carg[].cd` precisam bater com o pedido.
+- **Abrangência e cargo conferidos:** `cdabr` é obrigatório e precisa bater com a UF pedida; `ele` e `carg[].cd`, quando
+  presentes, precisam bater com a eleição e o cargo. O arquivo precisa ter **exatamente 2 candidatos**.
 - **Sem dados inventados:** campo ausente fica `null` e aparece como "—". 404 vira "o TSE ainda não divulgou".
 - **Eleito:** só quando o candidato vem com `e = "s"`. **Totalização encerrada:** só com `and = "f"` e 100% das seções.
 - **Percentuais:** usa o percentual do TSE (`pvapn`). O calculado (votos ÷ soma dos votos dos candidatos) só aparece,
@@ -38,24 +39,37 @@ A interface só conhece o formato normalizado de `src/lib/tipos.ts`. Os detalhes
 
 ## Atualização e cache
 
+O cache do servidor fica em `src/lib/tse/cache.ts` (memória da instância da função), e não no Data Cache do Next,
+porque é preciso saber a hora real em que cada arquivo foi baixado do TSE.
+
 | Onde | Duração | Motivo |
 |---|---|---|
-| Data Cache do Next (arquivo `-u`) | 30 s | No máximo ~2 consultas por minuto ao TSE por arquivo, qualquer que seja o número de visitantes |
-| Data Cache do Next (`ele-c.json`) | 300 s | Muda raramente |
-| CDN da Vercel (`/api/resultados`) | 15 s + 15 s stale | Absorve picos |
+| Servidor, arquivo `-u` | 30 s | Limita as consultas ao TSE por instância, qualquer que seja o número de visitantes |
+| Servidor, `ele-c.json` | 300 s | Muda raramente |
+| Servidor, 404 | 30 s | O TSE pode bloquear IPs com muitos 404 |
+| Servidor, outros erros | 15 s | Não insistir numa fonte instável |
+| Servidor, após HTTP 403/429 | pausa de 10 min em todas as consultas | Tentar durante o bloqueio o renova (regra do TSE) |
+| Servidor, requisições simultâneas | deduplicadas por URL | Picos de acesso viram uma consulta |
+| CDN da Vercel (`/api/resultados`) | 15 s + 15 s stale | Absorve picos; só aceita `cargo` e `uf` em minúsculas, outros parâmetros dão 400 |
 | Navegador | a cada 60 s com a aba visível; recuo 60→120→240→300 s em erro | Evita requisições excessivas |
 
-Pior caso de defasagem entre o TSE e a tela: cerca de 2 minutos. Por isso a interface mostra **dois horários**,
-o da totalização informado pelo TSE (`dt`/`ht`) e o da última consulta bem-sucedida, e nunca diz "tempo real".
-Se a consulta falhar, a última informação válida fica na tela com aviso e horário. Depois de 3 minutos sem
-consulta bem-sucedida, os dados são marcados como desatualizados.
+Nenhum dado vencido é servido como novo: o campo `consultadoEm` da API é a **hora real do download no TSE**, e é
+essa hora que a tela mostra como "Consultado no TSE às …". Se o TSE falhar depois do vencimento do cache, a API
+responde `erro-fonte`; a tela mantém a última informação válida com aviso. A tela também mostra o horário da
+totalização informado pelo próprio TSE (`dt`/`ht`), com data e "horário de Brasília". O app nunca diz "tempo real".
+Depois de 3 minutos sem dado novo (descontada a idade do dado no servidor), a tela marca "desatualizado".
+Se o TSE deixar de responder um arquivo que já tinha dados (404 passageiro), a tela mantém os dados com aviso.
+
+Observação: com várias instâncias da função, cada uma tem seu cache. O limite efetivo é de ~2 consultas por minuto
+por arquivo **por instância**; a CDN de 15 s reduz bastante o número de instâncias acionadas.
 
 ## Segurança
 
 - Sem segredos, banco de dados ou autenticação. Nenhuma variável de ambiente obrigatória.
 - `cargo` e `uf` são validados contra listas fechadas; o caminho é montado no servidor com segmentos `[a-z0-9._-]`,
   e host e protocolo são verificados antes de cada requisição (sem SSRF).
-- Cabeçalhos `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`; `poweredByHeader` desligado.
+- Cabeçalhos: Content-Security-Policy (só mesma origem), `Permissions-Policy`, HSTS, `X-Content-Type-Options`,
+  `Referrer-Policy`, `X-Frame-Options`; `poweredByHeader` desligado. Arquivos do TSE acima de 5 MB são recusados.
 - Link externo do anúncio com `rel="noopener noreferrer"`.
 
 ## Mobile-first
