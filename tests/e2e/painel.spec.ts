@@ -259,3 +259,23 @@ test("fale com a gente: manda mensagem com e-mail e aceite", async ({ page }) =>
   await expect(page.getByTestId("fale-ok")).toBeVisible();
   expect(chamadas).toContain("/api/mensagem");
 });
+
+test("chat: regras visíveis, texto sem HTML, comentar e denunciar", async ({ page }) => {
+  const { erros, chamadas } = await abrir(page, DURANTE, true);
+  const chat = page.getByTestId("chat");
+  await chat.scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("chat-regras")).toContainText("não do acompanhevotos nem do TSE");
+  await expect(page.getByTestId("chat-regras")).toContainText("não apoia nenhum candidato");
+  const lista = page.getByTestId("chat-lista");
+  await expect(lista).toContainText("<b>apuração</b> andando rápido");
+  await expect(lista.locator("b", { hasText: /^apuração$/ })).toHaveCount(0);
+  await chat.getByLabel("Apelido (opcional)").fill("Bia");
+  await chat.getByLabel("Comentário").fill("Acompanhando daqui de Salvador");
+  await page.getByTestId("chat-enviar").click();
+  await expect(lista.locator("li").first()).toContainText("Acompanhando daqui de Salvador");
+  await expect(lista.locator("li").first()).toContainText("Bia");
+  await lista.locator("li").nth(1).getByRole("button", { name: "Denunciar" }).click();
+  await expect(lista.locator("li").nth(1).getByRole("button", { name: "Denunciado" })).toBeDisabled();
+  expect(chamadas).toContain("/api/chat/denuncia");
+  expect(erros).toEqual([]);
+});

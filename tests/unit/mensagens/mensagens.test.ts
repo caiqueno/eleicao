@@ -33,7 +33,7 @@ describe("caixa de entrada no Redis", () => {
     expect(await guardarMensagem({ email: "a@b.com", texto: "oi", ip: "1.2.3.4" }, { cfg: CFG, fetchImpl: f })).toBe("limite");
     const gravado = corpos.find((c) => c[0][0] === "LPUSH")!;
     const m = JSON.parse(String(gravado[0][2]));
-    expect(Object.keys(m).sort()).toEqual(["email", "em", "id", "texto"]);
+    expect(Object.keys(m).sort()).toEqual(["em", "email", "id", "texto"]);
     expect(JSON.stringify(corpos)).not.toContain("1.2.3.4");
   });
   it("sem Redis fica indisponível", async () => {

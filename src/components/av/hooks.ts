@@ -230,7 +230,7 @@ export function useHash(): [string, (h: string) => void] {
 }
 
 /* Pessoas com a página aberta agora: sinal a cada 45 s enquanto a aba está visível. */
-function idDoNavegador(): string {
+export function idDoNavegador(): string {
   try {
     const salvo = localStorage.getItem("av:id");
     if (salvo && /^[a-f0-9]{32}$/.test(salvo)) return salvo;

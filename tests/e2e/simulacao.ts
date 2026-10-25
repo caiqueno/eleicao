@@ -166,6 +166,14 @@ export async function simularApi(page: Page, apurando: boolean, pessoas: number 
     if (url.pathname === "/api/municipios") return rota.fulfill({ json: { municipios: [["sp", "10000", "3500105", "ADAMANTINA"], ["ba", "10001", "2900108", "ABAÍRA"]] } });
     if (url.pathname === "/api/presenca") return rota.fulfill({ json: { agora: pessoas, hoje: pessoas === null ? null : hoje } });
     if (url.pathname === "/api/mensagem") return rota.fulfill({ json: { ok: true } });
+    if (url.pathname === "/api/chat" && rota.request().method() === "POST") {
+      const { apelido, texto } = rota.request().postDataJSON() as { apelido?: string; texto: string };
+      return rota.fulfill({ json: { mensagem: { id: "00000000-0000-4000-8000-000000000002", em: "2026-10-25T22:31:00.000Z", apelido: apelido || "Visitante", texto } } });
+    }
+    if (url.pathname === "/api/chat") {
+      return rota.fulfill({ json: { mensagens: [{ id: "00000000-0000-4000-8000-000000000001", em: "2026-10-25T22:20:00.000Z", apelido: "Ana", texto: "<b>apuração</b> andando rápido" }] } });
+    }
+    if (url.pathname === "/api/chat/denuncia") return rota.fulfill({ json: { ok: true } });
     if (url.pathname === "/api/foto") return rota.fulfill({ status: 404, body: "" });
     return rota.fulfill({ status: 404, json: { erro: "não simulado" } });
   });

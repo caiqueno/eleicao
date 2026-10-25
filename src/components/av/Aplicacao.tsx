@@ -7,6 +7,7 @@ import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import type { AreaMapa, RespostaMapa } from "@/lib/tse/mapa";
 import type { RespostaPrimeiroTurno } from "@/lib/tse/primeiroTurno";
 import { Anuncio, Busca, Cabecalho, LinhaDoTempo } from "./Cabecalho";
+import { Chat } from "./Chat";
 import { Compartilhar } from "./Compartilhar";
 import { FaleConosco } from "./FaleConosco";
 import { IconeApp } from "./IconesApps";
@@ -345,6 +346,7 @@ export function Aplicacao() {
           />
         )}
       </main>
+      <Chat />
       <footer className="rodape">
         <span>
           <b>acompanhevotos</b> · feito por caiqueno
