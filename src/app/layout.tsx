@@ -3,6 +3,15 @@ import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://acompanhevotos.vercel.app"),
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "acompanhevotos",
+    title: "acompanhevotos · 2º turno 2026",
+    description: "Placar, mapa por estado e município e projeção do 2º turno com dados oficiais do TSE.",
+  },
+  twitter: { card: "summary_large_image" },
   title: "acompanhevotos · 2º turno 2026",
   description:
     "Acompanhe o 2º turno das Eleições Gerais 2026 para Presidente e Governador com dados oficiais do Tribunal Superior Eleitoral (TSE).",

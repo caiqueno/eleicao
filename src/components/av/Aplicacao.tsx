@@ -7,6 +7,7 @@ import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import type { AreaMapa, RespostaMapa } from "@/lib/tse/mapa";
 import type { RespostaPrimeiroTurno } from "@/lib/tse/primeiroTurno";
 import { Anuncio, Busca, Cabecalho, LinhaDoTempo } from "./Cabecalho";
+import { Compartilhar } from "./Compartilhar";
 import { Boletim, Presenca, textoWhatsapp, viradas } from "./Exclusivos";
 import { useAgora, useHash, useHistorico, useJsonPeriodico, usePreferencia, usePresenca } from "./hooks";
 import { PainelDetalhe, PainelProjecao, projetar } from "./Laterais";
@@ -73,7 +74,7 @@ export function Aplicacao() {
   const [busca, setBusca] = useState(false);
   const [temaSalvo, definirTema] = usePreferencia("av:tema", "escuro");
   const tema = temaSalvo === "claro" ? "claro" : "escuro";
-  const [aviso, setAviso] = useState<string | null>(null);
+  const aviso = null;
   const agora = useAgora();
   const pessoas = usePresenca();
 
@@ -153,19 +154,8 @@ export function Aplicacao() {
   };
   const ufsGov = cargo === "governador" ? (mapaBr.dados?.areas.map((a) => a.cd) ?? []) : undefined;
 
-  const compartilhar = async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) await navigator.share({ title: "acompanhevotos · 2º turno", url });
-      else {
-        await navigator.clipboard.writeText(url);
-        setAviso("Link copiado.");
-      }
-    } catch {
-      /* compartilhamento cancelado */
-    }
-    setTimeout(() => setAviso(null), 3000);
-  };
+  const [compartilhando, setCompartilhando] = useState(false);
+  const compartilhar = () => setCompartilhando(true);
 
   // --- painel da direita ----------------------------------------------------
   const mapaAtual = vista === "br" ? mapaBr : mapaUf;
@@ -352,6 +342,7 @@ export function Aplicacao() {
           · mapas IBGE e Natural Earth · confira sempre no TSE
         </span>
       </footer>
+      <Compartilhar aberta={compartilhando} aoFechar={() => setCompartilhando(false)} resultado={resultado} />
       <Busca
         aberta={busca}
         aoFechar={() => setBusca(false)}

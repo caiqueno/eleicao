@@ -137,3 +137,22 @@ test("boletim: diferença, viradas e texto para o WhatsApp com resultado parcial
   expect(texto).toContain("Resultado parcial");
   expect(texto).toContain("41,37%");
 });
+
+test("compartilhar: gera a imagem para Stories e feed com o placar parcial", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "geração da imagem testada uma vez");
+  await abrir(page, DURANTE, true);
+  await expect(page.getByTestId("candidato").first()).toContainText("50,62%");
+  await page.getByTestId("botao-compartilhar").click();
+  await expect(page.getByTestId("compartilhar")).toBeVisible();
+  for (const [formato, w, h] of [["stories", 1080, 1920], ["feed", 1080, 1350]] as const) {
+    const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId(`cartao-${formato}`).click()]);
+    expect(download.suggestedFilename()).toBe(`acompanhevotos-${formato}.png`);
+    const caminho = info.outputPath(`${formato}.png`);
+    await download.saveAs(caminho);
+    const png = (await import("node:fs")).readFileSync(caminho);
+    expect(png.readUInt32BE(16)).toBe(w);
+    expect(png.readUInt32BE(20)).toBe(h);
+    if (process.env.CAPTURAS) (await import("node:fs")).copyFileSync(caminho, `${process.env.CAPTURAS}/cartao-${formato}.png`);
+  }
+  await expect(page.getByTestId("compartilhar")).toContainText("Imagem salva");
+});

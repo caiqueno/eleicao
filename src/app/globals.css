@@ -1519,3 +1519,93 @@ a {
     padding: 4px 9px;
   }
 }
+
+/* ---------------------------------------------------------- compartilhar -- */
+
+.compartilhar {
+  padding: 18px;
+}
+.compartilhar__cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.compartilhar__cab h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.compartilhar__sub,
+.compartilhar__nota {
+  margin: 6px 0 14px;
+  color: var(--suave);
+  font-size: 13.5px;
+}
+.compartilhar__nota {
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+.compartilhar__grade {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.compartilhar__botao {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--borda-forte);
+  background: var(--painel-2);
+  color: var(--texto);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.compartilhar__botao b {
+  font-size: 15px;
+}
+.compartilhar__botao span {
+  font-size: 12px;
+  color: var(--suave);
+}
+.compartilhar__botao:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.compartilhar__botao--insta {
+  border: 0;
+  background: linear-gradient(135deg, #f58529, #dd2a7b 50%, #8134af);
+  color: #fff;
+}
+.compartilhar__botao--insta span {
+  color: rgba(255, 255, 255, 0.85);
+}
+.compartilhar__botao--whats {
+  border: 0;
+  background: #1f8f4e;
+  color: #fff;
+}
+.compartilhar__botao--whats span {
+  color: rgba(255, 255, 255, 0.85);
+}
+.compartilhar__mais {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px dashed var(--borda-forte);
+  background: none;
+  color: var(--suave);
+  cursor: pointer;
+}
+.compartilhar__aviso {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--painel-2);
+  font-size: 13px;
+  word-break: break-all;
+}
