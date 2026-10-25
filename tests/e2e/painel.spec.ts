@@ -305,6 +305,11 @@ test("bate-papo: aba estilo MSN abre a janela, regras visíveis, texto sem HTML,
 
 test("bate-papo: responder uma mensagem mostra a citação, como reply", async ({ page }) => {
   const { erros } = await abrir(page, DURANTE, true);
+  const longa = { id: "00000000-0000-4000-8000-000000000007", em: "2026-10-25T22:21:00.000Z", apelido: "Site top", texto: "Vai pra SPA amanhã levando o bolo se não vou barrar lá kkkkkk e mais um tanto de texto comprido" };
+  await page.route("**/api/chat", (rota) => {
+    if (rota.request().method() !== "GET") return rota.fallback();
+    return rota.fulfill({ json: { mensagens: [longa, { id: "00000000-0000-4000-8000-000000000001", em: "2026-10-25T22:20:00.000Z", apelido: "Ana", texto: "<b>apuração</b> andando rápido" }] } });
+  });
   await page.getByTestId("chat-aba").click();
   const chat = page.getByTestId("chat");
   // Sem nome, não aparece o botão de responder.
@@ -314,6 +319,16 @@ test("bate-papo: responder uma mensagem mostra a citação, como reply", async (
   const msgs = page.getByTestId("chat-msg");
   await msgs.first().getByTestId("chat-responder").click();
   await expect(page.getByTestId("chat-respondendo")).toContainText("Respondendo a Ana");
+  await page.getByTestId("chat-cancelar-resposta").click();
+  // Respondendo a uma mensagem longa: a faixa corta o texto e o botão Enviar continua dentro da janela.
+  await msgs.last().getByTestId("chat-responder").click();
+  await expect(page.getByTestId("chat-respondendo")).toContainText("Respondendo a Site top");
+  await chat.getByLabel("Mensagem do bate-papo").fill("oi");
+  const janela = (await chat.boundingBox())!;
+  const botao = (await page.getByTestId("chat-enviar").boundingBox())!;
+  expect(botao.x + botao.width).toBeLessThanOrEqual(janela.x + janela.width);
+  const faixa = (await page.getByTestId("chat-respondendo").boundingBox())!;
+  expect(faixa.x + faixa.width).toBeLessThanOrEqual(janela.x + janela.width);
   await page.getByTestId("chat-cancelar-resposta").click();
   await expect(page.getByTestId("chat-respondendo")).toHaveCount(0);
   await msgs.first().getByTestId("chat-responder").click();
