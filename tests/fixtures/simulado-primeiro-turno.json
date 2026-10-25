@@ -1,0 +1,75 @@
+{
+  "_aviso": "SIMULADO - não é resultado real do TSE",
+  "ele": "6257",
+  "cdabr": "br",
+  "dg": "25/10/2026",
+  "hg": "18:30:05",
+  "dt": "25/10/2026",
+  "ht": "18:30:00",
+  "and": "p",
+  "s": {
+    "ts": "1000",
+    "st": "500",
+    "pstn": "50,00"
+  },
+  "e": {
+    "te": "150000",
+    "est": "75000",
+    "c": "80000",
+    "a": "70000"
+  },
+  "v": {
+    "vv": "75000",
+    "vb": "2000",
+    "tvn": "3000"
+  },
+  "carg": [
+    {
+      "cd": "1",
+      "agr": [
+        {
+          "nm": "COLIGAÇÃO SIMULADA X",
+          "vag": "1",
+          "par": [
+            {
+              "sg": "PSIMA",
+              "cand": [
+                {
+                  "n": "11",
+                  "nm": "CANDIDATO SIMULADO A",
+                  "nmu": "SIMULADO A",
+                  "sqcand": "999000000011",
+                  "vap": "30000",
+                  "pvapn": "40,00",
+                  "e": "n",
+                  "st": ""
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nm": "COLIGAÇÃO SIMULADA Y",
+          "vag": "1",
+          "par": [
+            {
+              "sg": "PSIMB",
+              "cand": [
+                {
+                  "n": "22",
+                  "nm": "CANDIDATO SIMULADO B",
+                  "nmu": "SIMULADO B",
+                  "sqcand": "999000000022",
+                  "vap": "45000",
+                  "pvapn": "60,00",
+                  "e": "n",
+                  "st": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

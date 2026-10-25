@@ -1,0 +1,117 @@
+{
+  "_aviso": "SIMULADO - não é resultado real do TSE",
+  "ele": "6258",
+  "cdabr": "br",
+  "dg": "25/10/2026",
+  "hg": "18:30:05",
+  "dt": "25/10/2026",
+  "ht": "18:30:00",
+  "and": "p",
+  "s": {
+    "ts": "1000",
+    "st": "500",
+    "pstn": "50,00"
+  },
+  "e": {
+    "te": "150000",
+    "est": "75000",
+    "c": "80000",
+    "a": "70000"
+  },
+  "v": {
+    "vv": "100000",
+    "vb": "2000",
+    "tvn": "3000"
+  },
+  "carg": [
+    {
+      "cd": "1",
+      "agr": [
+        {
+          "nm": "COLIGAÇÃO SIMULADA X",
+          "vag": "1",
+          "par": [
+            {
+              "sg": "PSIMA",
+              "cand": [
+                {
+                  "n": "11",
+                  "nm": "CANDIDATO SIMULADO A",
+                  "nmu": "SIMULADO A",
+                  "sqcand": "999000000011",
+                  "vap": "33333",
+                  "pvapn": "33,33",
+                  "e": "n",
+                  "st": ""
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nm": "COLIGAÇÃO SIMULADA Y",
+          "vag": "1",
+          "par": [
+            {
+              "sg": "PSIMB",
+              "cand": [
+                {
+                  "n": "22",
+                  "nm": "CANDIDATO SIMULADO B",
+                  "nmu": "SIMULADO B",
+                  "sqcand": "999000000022",
+                  "vap": "50000",
+                  "pvapn": "50,00",
+                  "e": "n",
+                  "st": ""
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nm": "COLIGAÇÃO SIMULADA Z",
+          "vag": "1",
+          "par": [
+            {
+              "sg": "PSIMC",
+              "cand": [
+                {
+                  "n": "33",
+                  "nm": "CANDIDATO SIMULADO C",
+                  "nmu": "SIMULADO C",
+                  "sqcand": "999000000033",
+                  "vap": "16667",
+                  "pvapn": "16,67",
+                  "e": "n",
+                  "st": ""
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nm": "COLIGAÇÃO SIMULADA W",
+          "vag": "1",
+          "par": [
+            {
+              "sg": "PSIMD",
+              "cand": [
+                {
+                  "n": "44",
+                  "nm": "CANDIDATO SIMULADO D",
+                  "nmu": "SIMULADO D",
+                  "sqcand": "999000000044",
+                  "vap": "0",
+                  "pvapn": "0,00",
+                  "e": "n",
+                  "st": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
