@@ -32,6 +32,17 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // Páginas sem cache no navegador nem em proxies: quem abre o site sempre recebe a versão
+      // mais nova. Os arquivos em /_next/static têm nome com hash e continuam em cache; as APIs
+      // definem o próprio Cache-Control.
+      {
+        source: "/((?!_next/static|_next/image|api/|mapas/).*)",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate, max-age=0" },
+          { key: "Pragma", value: "no-cache" },
+          { key: "Expires", value: "0" },
+        ],
+      },
       {
         source: "/(.*)",
         headers: [
