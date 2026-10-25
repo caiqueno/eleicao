@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import { textoWhatsapp } from "./Exclusivos";
+import { IconeApp } from "./IconesApps";
 import { coresDe, horaBrasilia, INICIO_DIVULGACAO_MS, nomeCurto, parcelas, pct2, type CandidatoBase } from "./util";
 
 export const SITE = "acompanhevotos.vercel.app";
@@ -253,11 +254,13 @@ export function Compartilhar({ aberta, aoFechar, resultado }: Props) {
         <p className="compartilhar__sub">Imagem do placar com o endereço do site, pronta para o Instagram.</p>
         <div className="compartilhar__grade">
           <button type="button" className="compartilhar__botao compartilhar__botao--insta" disabled={ocupado} onClick={() => imagem("stories")} data-testid="cartao-stories">
-            <b>Stories</b>
+            <IconeApp app="instagram" tam={28} />
+            <b>Instagram Stories</b>
             <span>Imagem vertical</span>
           </button>
           <button type="button" className="compartilhar__botao compartilhar__botao--insta" disabled={ocupado} onClick={() => imagem("feed")} data-testid="cartao-feed">
-            <b>Feed</b>
+            <IconeApp app="instagram" tam={28} />
+            <b>Instagram Feed</b>
             <span>Imagem 4:5</span>
           </button>
           <button
@@ -265,17 +268,19 @@ export function Compartilhar({ aberta, aoFechar, resultado }: Props) {
             className="compartilhar__botao compartilhar__botao--whats"
             onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(textoWhatsapp(resultado, Date.now(), link()))}`, "_blank", "noopener,noreferrer")}
           >
+            <IconeApp app="whatsapp" tam={28} />
             <b>WhatsApp</b>
             <span>Mensagem com o placar</span>
           </button>
           <button type="button" className="compartilhar__botao" onClick={copiar} data-testid="copiar-link">
+            <IconeApp app="link" tam={28} />
             <b>Copiar link</b>
             <span>Para o adesivo “Link” ou a bio</span>
           </button>
         </div>
         {typeof navigator !== "undefined" && "share" in navigator && (
           <button type="button" className="compartilhar__mais" onClick={nativo}>
-            Outros apps…
+            <IconeApp app="mais" tam={18} /> Outros apps…
           </button>
         )}
         {aviso && (
