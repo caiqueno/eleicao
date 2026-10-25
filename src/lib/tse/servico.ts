@@ -8,7 +8,7 @@ import { normalizarResultado, RespostaInvalida } from "./resultado";
 
 /** Cache no servidor (cache.ts): config muda raramente; resultado no máximo a cada 30 s por instância. */
 export const CACHE_CONFIG_MS = 300_000;
-export const CACHE_RESULTADO_MS = 30_000;
+export const CACHE_RESULTADO_MS = 10_000;
 
 export const URL_CONFIG = urlTse(TSE_AMBIENTE, "comum", "config", "ele-c.json");
 

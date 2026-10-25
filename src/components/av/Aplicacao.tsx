@@ -91,8 +91,8 @@ export function Aplicacao() {
 
   const res = useResultados(cargo, ufTopo);
   const resultado = res.ultimaValida?.resultado ?? null;
-  const mapaBr = useJsonPeriodico<RespostaMapa>(`/api/mapa?cargo=${cargo}&uf=br`, 60);
-  const mapaUf = useJsonPeriodico<RespostaMapa>(uf !== "br" ? `/api/mapa?cargo=${cargo}&uf=${uf}` : null, 60);
+  const mapaBr = useJsonPeriodico<RespostaMapa>(`/api/mapa?cargo=${cargo}&uf=br`, 10);
+  const mapaUf = useJsonPeriodico<RespostaMapa>(uf !== "br" ? `/api/mapa?cargo=${cargo}&uf=${uf}` : null, 10);
   const ptTopo = useJsonPeriodico<RespostaPrimeiroTurno>(
     cargo === "presidente" || uf !== "br" ? `/api/primeiro-turno?cargo=${cargo}&uf=${cargo === "presidente" ? "br" : uf}` : null,
     3600,

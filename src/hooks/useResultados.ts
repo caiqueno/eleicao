@@ -5,7 +5,7 @@ import type { CargoId } from "@/config/eleicao";
 import type { EstadoConsulta, RespostaApi } from "@/lib/tipos";
 
 /** Intervalo normal entre consultas (s). */
-export const INTERVALO_SEGUNDOS = 60;
+export const INTERVALO_SEGUNDOS = 10;
 /** Teto do backoff em caso de erro (s). */
 export const INTERVALO_MAXIMO_SEGUNDOS = 300;
 /** Depois deste tempo sem consulta bem-sucedida, os dados são "desatualizados". */

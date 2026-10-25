@@ -18,7 +18,7 @@ describe("obterArquivo", () => {
     const r = relogio();
     const f = fetchFalso({ [URL]: responder("v1") });
     const a = await obterArquivo(URL, TTL_OK_MS, { fetchImpl: f }, r.agora);
-    r.avancar(10_000);
+    r.avancar(TTL_OK_MS - 1_000);
     const b = await obterArquivo(URL, TTL_OK_MS, { fetchImpl: f }, r.agora);
     expect(b).toBe(a);
     expect(a.obtidoEm).toBe("2026-10-25T21:00:00.000Z");
@@ -87,7 +87,7 @@ describe("consultarResultado com cache", () => {
         [urlResultadoTse("6258", "1", "br")]: responder(gerarJws(fixture("simulado-parcial.json"))),
       });
       await consultarResultado("presidente", "br", { fetchImpl: f });
-      vi.setSystemTime(new Date("2026-10-25T21:00:20Z"));
+      vi.setSystemTime(new Date("2026-10-25T21:00:05Z"));
       const r = await consultarResultado("presidente", "br", { fetchImpl: f });
       expect(r.consultadoEm).toBe("2026-10-25T21:00:00.000Z");
       expect(f).toHaveBeenCalledTimes(2);

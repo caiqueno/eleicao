@@ -141,7 +141,7 @@ export function Placar({ cargo, uf, resultado, agora, carregando }: Props) {
           resultado.votos.eleitoradoFaltando !== null && <span key="faltam">faltam {compacto(resultado.votos.eleitoradoFaltando)} de eleitores</span>,
           t.atualizadoEmFonte && (
             <span key="fonte" className="placar__fonte" data-testid="atualizado-fonte">
-              dados oficiais do TSE, atualizados às {horaBrasilia(Date.parse(t.atualizadoEmFonte))} · a página confere a cada 60 s
+              dados oficiais do TSE, atualizados às {horaBrasilia(Date.parse(t.atualizadoEmFonte))} · a página confere a cada 10 s
             </span>
           ),
         ]

@@ -15,6 +15,6 @@ export async function GET(req: NextRequest) {
   const resposta = uf === "br" ? await mapaBrasil(cargo) : await mapaUf(cargo, uf);
   return NextResponse.json(resposta, {
     status: resposta.estado === "erro-fonte" ? 502 : 200,
-    headers: { "Cache-Control": "public, s-maxage=20, stale-while-revalidate=20" },
+    headers: { "Cache-Control": "public, s-maxage=10, stale-while-revalidate=10" },
   });
 }
