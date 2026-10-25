@@ -16,6 +16,7 @@ const ERROS = {
   limite: [429, "Muitos comentários seguidos. Tente de novo em alguns minutos."],
   banido: [403, "Você não pode mais comentar aqui."],
   indisponivel: [503, "Não foi possível enviar agora"],
+  resposta: [409, "A mensagem que você respondeu não está mais disponível."],
 } as const;
 
 export async function GET() {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
   if (!v.ok) return NextResponse.json({ erro: v.erro }, { status: 400, headers: SEM_CACHE });
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "?";
   if (v.gif && !(await gifPermitido(v.gif))) return NextResponse.json({ erro: "Esse GIF não pode ser usado" }, { status: 400, headers: SEM_CACHE });
-  const r = await publicarChat({ apelido: v.apelido, texto: v.texto, aparelho: v.aparelho, ip, gif: v.gif });
+  const r = await publicarChat({ apelido: v.apelido, texto: v.texto, aparelho: v.aparelho, ip, gif: v.gif, resposta: v.resposta });
   if (!r.ok) {
     const [status, erro] = ERROS[r.motivo];
     return NextResponse.json({ erro }, { status, headers: SEM_CACHE });

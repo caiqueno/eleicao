@@ -143,6 +143,35 @@ describe("chat no Redis", () => {
     expect(await moderarChat("apagar-tudo", a.mensagem.id, r.opcoes)).toBe("invalido");
   });
 
+  it("resposta: o trecho citado vem do servidor e some se a original for ocultada", async () => {
+    const r = redisFalso();
+    const longo = "a apuração está andando bem rápido hoje ".repeat(4).trim();
+    const a = await publicarChat({ apelido: "Ana", texto: longo, aparelho: AP, ip: "1.1.1.1" }, r.opcoes);
+    if (!a.ok) throw new Error();
+    const b = await publicarChat({ apelido: "Rui", texto: "concordo", aparelho: AP2, ip: "2.2.2.2", resposta: a.mensagem.id }, r.opcoes);
+    if (!b.ok) throw new Error();
+    expect(b.mensagem.resp).toMatchObject({ id: a.mensagem.id, apelido: "Ana" });
+    expect(b.mensagem.resp!.texto.length).toBeLessThanOrEqual(80);
+    expect(b.mensagem.resp!.texto.endsWith("…")).toBe(true);
+    expect((await lerChat(r.opcoes))![0].resp).toMatchObject({ id: a.mensagem.id, apelido: "Ana" });
+
+    expect(await moderarChat("ocultar", a.mensagem.id, r.opcoes)).toBe("ok");
+    expect((await lerChat(r.opcoes))![0].resp).toEqual({ id: a.mensagem.id, apelido: "", texto: "", removida: true });
+    r.passarTempo();
+    expect(await publicarChat({ apelido: "Rui", texto: "e agora", aparelho: AP2, ip: "2.2.2.2", resposta: a.mensagem.id }, r.opcoes)).toEqual({ ok: false, motivo: "resposta" });
+    r.passarTempo();
+    const inexistente = "00000000-0000-4000-8000-000000000009";
+    expect(await publicarChat({ apelido: "Rui", texto: "e agora", aparelho: AP2, ip: "2.2.2.2", resposta: inexistente }, r.opcoes)).toEqual({ ok: false, motivo: "resposta" });
+  });
+
+  it("validarChat aceita só id de mensagem como resposta", () => {
+    const base = { apelido: "Ana BA", texto: "oi gente", aparelho: AP };
+    expect(validarChat({ ...base, resposta: "00000000-0000-4000-8000-000000000001" })).toMatchObject({ ok: true, resposta: "00000000-0000-4000-8000-000000000001" });
+    expect(validarChat({ ...base, resposta: "<script>" })).toEqual({ ok: false, erro: "Pedido inválido" });
+    expect(validarChat({ ...base, resposta: { id: "x" } })).toEqual({ ok: false, erro: "Pedido inválido" });
+    expect(validarChat(base)).not.toHaveProperty("resposta");
+  });
+
   it("sem Redis fica indisponível", async () => {
     expect(await lerChat({ cfg: null })).toBeNull();
     expect((await publicarChat({ apelido: "A", texto: "oi", aparelho: AP, ip: "x" }, { cfg: null })).ok).toBe(false);

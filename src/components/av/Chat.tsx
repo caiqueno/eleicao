@@ -16,6 +16,7 @@ interface MensagemChat {
   apelido: string;
   texto: string;
   gif?: string;
+  resp?: { id: string; apelido: string; texto: string; removida?: true };
 }
 
 interface Gif {
@@ -102,6 +103,8 @@ export function Chat({ online }: { online: number | null }) {
   const [erro, setErro] = useState<string | null>(null);
   const [denunciadas, setDenunciadas] = useState<Set<string>>(new Set());
   const [regras, setRegras] = useState(false);
+  /** Mensagem que está sendo respondida, como reply. */
+  const [respondendo, setRespondendo] = useState<MensagemChat | null>(null);
   /** Ids que este navegador mandou: aparecem à direita, como no MSN. */
   const [meus, setMeus] = useState<string[]>(() =>
     lerLocal<string[]>("av:chat:meus", []),
@@ -243,6 +246,7 @@ export function Chat({ online }: { online: number | null }) {
           aparelho: idDoNavegador(),
           site,
           ...(gif ? { gif } : {}),
+          ...(respondendo ? { resposta: respondendo.id } : {}),
         }),
       });
       const j = (await r.json().catch(() => ({}))) as {
@@ -256,6 +260,7 @@ export function Chat({ online }: { online: number | null }) {
           /^(Nome|Informe seu nome|Escolha outro nome)/.test(j.erro)
         )
           setNomeDefinido(false);
+        if (r.status === 409) setRespondendo(null);
         throw new Error(j.erro ?? "Não foi possível enviar agora");
       }
       const m = j.mensagem;
@@ -266,6 +271,7 @@ export function Chat({ online }: { online: number | null }) {
         return n;
       });
       setTexto("");
+      setRespondendo(null);
       setEscolhendoGif(false);
       setBuscaGif("");
       setRodada((n) => n + 1);
@@ -286,6 +292,21 @@ export function Chat({ online }: { online: number | null }) {
     gravarLocal("av:apelido", n);
     setErro(null);
     setNomeDefinido(true);
+  };
+
+  const responder = (m: MensagemChat) => {
+    setRespondendo(m);
+    setErro(null);
+    campo.current?.focus();
+  };
+
+  /** Clicar na citação leva até a mensagem original, se ela ainda estiver na conversa. */
+  const irPara = (id: string) => {
+    const el = document.getElementById(`chat-m-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.classList.add("chat-msg--destaque");
+    setTimeout(() => el.classList.remove("chat-msg--destaque"), 1500);
   };
 
   const denunciar = async (id: string) => {
@@ -397,6 +418,7 @@ export function Chat({ online }: { online: number | null }) {
           return (
             <div
               key={m.id}
+              id={`chat-m-${m.id}`}
               className={`chat-msg${meu ? " chat-msg--meu" : ""}`}
               data-testid="chat-msg"
             >
@@ -406,6 +428,18 @@ export function Chat({ online }: { online: number | null }) {
                 </b>{" "}
                 diz
                 <time dateTime={m.em}>{hora(m.em)}</time>
+                {nomeDefinido && (
+                  <button
+                    type="button"
+                    className="chat-msg__responder"
+                    onClick={() => responder(m)}
+                    aria-label={`Responder ${meu ? "sua mensagem" : m.apelido}`}
+                    title="Responder"
+                    data-testid="chat-responder"
+                  >
+                    ↩
+                  </button>
+                )}
                 {!meu && (
                   <button
                     type="button"
@@ -421,6 +455,25 @@ export function Chat({ online }: { online: number | null }) {
                   </button>
                 )}
               </div>
+              {m.resp && (
+                <button
+                  type="button"
+                  className="chat-msg__citacao"
+                  onClick={() => m.resp && irPara(m.resp.id)}
+                  data-testid="chat-citacao"
+                >
+                  {m.resp.removida ? (
+                    <i>Mensagem removida pela moderação</i>
+                  ) : (
+                    <>
+                      <b style={{ color: corDe(m.resp.apelido) }}>
+                        {m.resp.apelido}
+                      </b>{" "}
+                      {m.resp.texto}
+                    </>
+                  )}
+                </button>
+              )}
               {m.texto && <p className="chat-msg__balao">{m.texto}</p>}
               {m.gif && /^[A-Za-z0-9]{5,40}$/.test(m.gif) && (
                 // eslint-disable-next-line @next/next/no-img-element -- GIF animado servido pelo GIPHY
@@ -531,6 +584,23 @@ export function Chat({ online }: { online: number | null }) {
               {texto.length}/{MAX_TEXTO}
             </small>
           </div>
+          {respondendo && (
+            <div className="chat-janela__respondendo" data-testid="chat-respondendo">
+              <span>
+                Respondendo a{" "}
+                <b>{meus.includes(respondendo.id) ? "você" : respondendo.apelido}</b>
+                : {respondendo.texto || (respondendo.gif ? "GIF" : "")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setRespondendo(null)}
+                aria-label="Cancelar resposta"
+                data-testid="chat-cancelar-resposta"
+              >
+                ×
+              </button>
+            </div>
+          )}
           <div className="chat-janela__linha">
             <textarea
               ref={campo}
