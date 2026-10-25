@@ -346,7 +346,6 @@ export function Aplicacao() {
           />
         )}
       </main>
-      <Chat />
       <footer className="rodape">
         <span>
           <b>acompanhevotos</b> · feito por caiqueno
@@ -360,6 +359,7 @@ export function Aplicacao() {
         </span>
       </footer>
       <FaleConosco />
+      <Chat online={pessoas.agora} />
       <Compartilhar aberta={compartilhando} aoFechar={() => setCompartilhando(false)} resultado={resultado} />
       <Busca
         aberta={busca}
