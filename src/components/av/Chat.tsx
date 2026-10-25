@@ -24,13 +24,40 @@ interface Gif {
 }
 
 /** Só ids do GIPHY chegam aqui; a imagem vem sempre do endereço fixo do GIPHY. */
-const urlGif = (id: string) => `https://media.giphy.com/media/${encodeURIComponent(id)}/200w.webp`;
+const urlGif = (id: string) =>
+  `https://media.giphy.com/media/${encodeURIComponent(id)}/200w.webp`;
 
-const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+const hora = (iso: string) =>
+  new Date(iso).toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const RE_NOME = /^[\p{L}\p{N} ._-]+$/u;
+const limparNome = (s: string) => s.replace(/\s+/g, " ").trim();
+const nomeValido = (s: unknown) =>
+  typeof s === "string" &&
+  limparNome(s).length >= 2 &&
+  limparNome(s).length <= MAX_APELIDO &&
+  RE_NOME.test(limparNome(s));
 
 /** Cor fixa por apelido, como os nomes coloridos do MSN. */
-const CORES_APELIDO = ["#2f80ed", "#9b51e0", "#27ae60", "#e67e22", "#eb5757", "#00a3a3", "#c0399f", "#7a8a00"];
-const corDe = (s: string) => CORES_APELIDO[[...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % CORES_APELIDO.length];
+const CORES_APELIDO = [
+  "#2f80ed",
+  "#9b51e0",
+  "#27ae60",
+  "#e67e22",
+  "#eb5757",
+  "#00a3a3",
+  "#c0399f",
+  "#7a8a00",
+];
+const corDe = (s: string) =>
+  CORES_APELIDO[
+    [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) %
+      CORES_APELIDO.length
+  ];
 
 /** Ids em ordem: se não mudou, a lista não é trocada (nada pisca nem rola à toa). */
 const assinatura = (l: MensagemChat[]) => l.map((m) => m.id).join(",");
@@ -61,17 +88,29 @@ export function Chat({ online }: { online: number | null }) {
   const [lista, setLista] = useState<MensagemChat[] | null>(null);
   const [indisponivel, setIndisponivel] = useState(false);
   const [texto, setTexto] = useState("");
-  const [apelido, setApelido] = useState(() => lerLocal("av:apelido", ""));
-  const [editandoApelido, setEditandoApelido] = useState(false);
+  const [apelido, setApelido] = useState(() =>
+    limparNome(lerLocal("av:apelido", "")),
+  );
+  /** O nome é obrigatório: sem um nome guardado no aparelho, a janela pede o nome antes de liberar o envio. */
+  const [nomeDefinido, setNomeDefinido] = useState(() =>
+    nomeValido(lerLocal("av:apelido", "")),
+  );
+  const [nomeDigitado, setNomeDigitado] = useState(() =>
+    lerLocal("av:apelido", ""),
+  );
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [denunciadas, setDenunciadas] = useState<Set<string>>(new Set());
   const [regras, setRegras] = useState(false);
   /** Ids que este navegador mandou: aparecem à direita, como no MSN. */
-  const [meus, setMeus] = useState<string[]>(() => lerLocal<string[]>("av:chat:meus", []));
+  const [meus, setMeus] = useState<string[]>(() =>
+    lerLocal<string[]>("av:chat:meus", []),
+  );
   /** As minhas, enquanto a lista da CDN (guardada por alguns segundos) ainda não as traz. */
   const [pendentes, setPendentes] = useState<MensagemChat[]>([]);
-  const [vistoAte, setVistoAte] = useState<string>(() => lerLocal("av:chat:visto", ""));
+  const [vistoAte, setVistoAte] = useState<string>(() =>
+    lerLocal("av:chat:visto", ""),
+  );
   const fundo = useRef<HTMLDivElement>(null);
   const campo = useRef<HTMLTextAreaElement>(null);
 
@@ -91,7 +130,11 @@ export function Chat({ online }: { online: number | null }) {
           if (!r.ok || !Array.isArray(j.mensagens)) throw new Error();
           if (!vivo) return;
           const novaLista = j.mensagens;
-          setLista((antes) => (antes && assinatura(antes) === assinatura(novaLista) ? antes : novaLista));
+          setLista((antes) =>
+            antes && assinatura(antes) === assinatura(novaLista)
+              ? antes
+              : novaLista,
+          );
           setIndisponivel(false);
           espera = base;
         } catch {
@@ -147,9 +190,14 @@ export function Chat({ online }: { online: number | null }) {
 
   // A API manda as mais novas primeiro; a janela mostra como conversa (as mais novas embaixo).
   const ids = new Set((lista ?? []).map((m) => m.id));
-  const conversa = [...pendentes.filter((m) => !ids.has(m.id)), ...(lista ?? [])].reverse();
+  const conversa = [
+    ...pendentes.filter((m) => !ids.has(m.id)),
+    ...(lista ?? []),
+  ].reverse();
   const ultima = conversa.at(-1)?.em ?? "";
-  const novas = aberta ? 0 : conversa.filter((m) => m.em > vistoAte && !meus.includes(m.id)).length;
+  const novas = aberta
+    ? 0
+    : conversa.filter((m) => m.em > vistoAte && !meus.includes(m.id)).length;
 
   const fechar = useRef(() => {});
   /** Abrir ou minimizar marca tudo o que está na conversa como visto. */
@@ -165,7 +213,8 @@ export function Chat({ online }: { online: number | null }) {
   });
 
   useLayoutEffect(() => {
-    if (aberta && fundo.current) fundo.current.scrollTop = fundo.current.scrollHeight;
+    if (aberta && fundo.current)
+      fundo.current.scrollTop = fundo.current.scrollHeight;
   }, [aberta, conversa.length]);
 
   useEffect(() => {
@@ -177,18 +226,38 @@ export function Chat({ online }: { online: number | null }) {
 
   const enviar = async (e?: React.FormEvent<HTMLFormElement>, gif?: string) => {
     e?.preventDefault();
-    if (enviando || (!gif && texto.trim().length < 2)) return;
+    if (enviando || !nomeDefinido || (!gif && texto.trim().length < 2)) return;
     setErro(null);
     setEnviando(true);
-    const site = (document.querySelector<HTMLInputElement>(".chat-janela input[name=site]")?.value ?? "").trim();
+    const site = (
+      document.querySelector<HTMLInputElement>(".chat-janela input[name=site]")
+        ?.value ?? ""
+    ).trim();
     try {
       const r = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apelido, texto: gif ? texto.trim() : texto, aparelho: idDoNavegador(), site, ...(gif ? { gif } : {}) }),
+        body: JSON.stringify({
+          apelido,
+          texto: gif ? texto.trim() : texto,
+          aparelho: idDoNavegador(),
+          site,
+          ...(gif ? { gif } : {}),
+        }),
       });
-      const j = (await r.json().catch(() => ({}))) as { mensagem?: MensagemChat; erro?: string };
-      if (!r.ok || !j.mensagem) throw new Error(j.erro ?? "Não foi possível enviar agora");
+      const j = (await r.json().catch(() => ({}))) as {
+        mensagem?: MensagemChat;
+        erro?: string;
+      };
+      if (!r.ok || !j.mensagem) {
+        // Nome recusado pelo servidor (reservado, ofensivo...): volta para a tela do nome.
+        if (
+          j.erro &&
+          /^(Nome|Informe seu nome|Escolha outro nome)/.test(j.erro)
+        )
+          setNomeDefinido(false);
+        throw new Error(j.erro ?? "Não foi possível enviar agora");
+      }
       const m = j.mensagem;
       setPendentes((p) => [m, ...p]);
       setMeus((x) => {
@@ -200,7 +269,6 @@ export function Chat({ online }: { online: number | null }) {
       setEscolhendoGif(false);
       setBuscaGif("");
       setRodada((n) => n + 1);
-      gravarLocal("av:apelido", apelido);
       campo.current?.focus();
     } catch (x) {
       setErro(x instanceof Error ? x.message : "Não foi possível enviar agora");
@@ -209,16 +277,40 @@ export function Chat({ online }: { online: number | null }) {
     }
   };
 
-  const denunciar = async (id: string) => {
-    setDenunciadas((d) => new Set(d).add(id));
-    await fetch("/api/chat/denuncia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }).catch(() => null);
+  const definirNome = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!nomeValido(nomeDigitado)) return;
+    const n = limparNome(nomeDigitado);
+    setApelido(n);
+    setNomeDigitado(n);
+    gravarLocal("av:apelido", n);
+    setErro(null);
+    setNomeDefinido(true);
   };
 
-  const status = online && online > 0 ? `${online.toLocaleString("pt-BR")} online` : "online";
+  const denunciar = async (id: string) => {
+    setDenunciadas((d) => new Set(d).add(id));
+    await fetch("/api/chat/denuncia", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).catch(() => null);
+  };
+
+  const status =
+    online && online > 0
+      ? `${online.toLocaleString("pt-BR")} online`
+      : "online";
 
   if (!aberta) {
     return (
-      <button type="button" className="chat-aba" onClick={() => alternar(true)} data-testid="chat-aba" aria-label={`Abrir bate-papo${novas ? `, ${novas} mensagens novas` : ""}`}>
+      <button
+        type="button"
+        className="chat-aba"
+        onClick={() => alternar(true)}
+        data-testid="chat-aba"
+        aria-label={`Abrir bate-papo${novas ? `, ${novas} mensagens novas` : ""}`}
+      >
         <span className="chat-aba__icone" aria-hidden="true">
           💬
         </span>
@@ -238,7 +330,12 @@ export function Chat({ online }: { online: number | null }) {
   }
 
   return (
-    <section className="chat-janela" role="dialog" aria-label="Bate-papo da apuração" data-testid="chat">
+    <section
+      className="chat-janela"
+      role="dialog"
+      aria-label="Bate-papo da apuração"
+      data-testid="chat"
+    >
       <header className="chat-janela__titulo">
         <span className="chat-janela__icone" aria-hidden="true">
           💬
@@ -249,14 +346,21 @@ export function Chat({ online }: { online: number | null }) {
             <i className="chat-ponto" aria-hidden="true" /> {status}
           </small>
         </span>
-        <button type="button" className="chat-janela__btn" onClick={() => alternar(false)} aria-label="Minimizar bate-papo" data-testid="chat-minimizar">
+        <button
+          type="button"
+          className="chat-janela__btn"
+          onClick={() => alternar(false)}
+          aria-label="Minimizar bate-papo"
+          data-testid="chat-minimizar"
+        >
           –
         </button>
       </header>
 
       <div className="chat-janela__regras" data-testid="chat-regras">
         <p>
-          Opinião de quem escreve, não do acompanhevotos nem do TSE. O site não apoia nenhum candidato.{" "}
+          Opinião de quem escreve, não do acompanhevotos nem do TSE. O site não
+          apoia nenhum candidato.{" "}
           {!regras && (
             <button type="button" onClick={() => setRegras(true)}>
               Regras
@@ -265,21 +369,42 @@ export function Chat({ online }: { online: number | null }) {
         </p>
         {regras && (
           <p>
-            Não são permitidos pedido de voto, propaganda, ofensas, links ou dados pessoais (telefone, e-mail, documentos). Mensagens fora das regras
-            são removidas. Para denúncia eleitoral, use o Pardal do TSE.
+            Não são permitidos pedido de voto, propaganda, ofensas, links ou
+            dados pessoais (telefone, e-mail, documentos). Mensagens fora das
+            regras são removidas. Para denúncia eleitoral, use o Pardal do TSE.
           </p>
         )}
       </div>
 
-      <div className="chat-janela__conversa" ref={fundo} data-testid="chat-lista" aria-live="polite">
-        {indisponivel && !lista && <p className="chat-janela__aviso">O bate-papo está indisponível agora.</p>}
-        {lista && conversa.length === 0 && <p className="chat-janela__aviso">Ninguém falou ainda. Comece a conversa!</p>}
+      <div
+        className="chat-janela__conversa"
+        ref={fundo}
+        data-testid="chat-lista"
+        aria-live="polite"
+      >
+        {indisponivel && !lista && (
+          <p className="chat-janela__aviso">
+            O bate-papo está indisponível agora.
+          </p>
+        )}
+        {lista && conversa.length === 0 && (
+          <p className="chat-janela__aviso">
+            Ninguém falou ainda. Comece a conversa!
+          </p>
+        )}
         {conversa.map((m) => {
           const meu = meus.includes(m.id);
           return (
-            <div key={m.id} className={`chat-msg${meu ? " chat-msg--meu" : ""}`} data-testid="chat-msg">
+            <div
+              key={m.id}
+              className={`chat-msg${meu ? " chat-msg--meu" : ""}`}
+              data-testid="chat-msg"
+            >
               <div className="chat-msg__meta">
-                <b style={meu ? undefined : { color: corDe(m.apelido) }}>{meu ? "Você" : m.apelido}</b> diz
+                <b style={meu ? undefined : { color: corDe(m.apelido) }}>
+                  {meu ? "Você" : m.apelido}
+                </b>{" "}
+                diz
                 <time dateTime={m.em}>{hora(m.em)}</time>
                 {!meu && (
                   <button
@@ -287,7 +412,9 @@ export function Chat({ online }: { online: number | null }) {
                     className="chat-msg__denunciar"
                     onClick={() => void denunciar(m.id)}
                     disabled={denunciadas.has(m.id)}
-                    aria-label={denunciadas.has(m.id) ? "Denunciado" : "Denunciar"}
+                    aria-label={
+                      denunciadas.has(m.id) ? "Denunciado" : "Denunciar"
+                    }
                     title={denunciadas.has(m.id) ? "Denunciado" : "Denunciar"}
                   >
                     {denunciadas.has(m.id) ? "denunciado" : "⚑"}
@@ -297,14 +424,22 @@ export function Chat({ online }: { online: number | null }) {
               {m.texto && <p className="chat-msg__balao">{m.texto}</p>}
               {m.gif && /^[A-Za-z0-9]{5,40}$/.test(m.gif) && (
                 // eslint-disable-next-line @next/next/no-img-element -- GIF animado servido pelo GIPHY
-                <img className="chat-msg__gif" src={urlGif(m.gif)} alt="GIF" loading="lazy" width={200} referrerPolicy="no-referrer" data-testid="chat-gif" />
+                <img
+                  className="chat-msg__gif"
+                  src={urlGif(m.gif)}
+                  alt="GIF"
+                  loading="lazy"
+                  width={200}
+                  referrerPolicy="no-referrer"
+                  data-testid="chat-gif"
+                />
               )}
             </div>
           );
         })}
       </div>
 
-      {escolhendoGif && gifsAtivos && (
+      {nomeDefinido && escolhendoGif && gifsAtivos && (
         <div className="chat-gifs" data-testid="chat-gifs">
           <input
             className="chat-gifs__busca"
@@ -327,79 +462,128 @@ export function Chat({ online }: { online: number | null }) {
                 style={{ aspectRatio: String(g.r || 1) }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- GIF animado servido pelo GIPHY */}
-                <img src={urlGif(g.id)} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                <img
+                  src={urlGif(g.id)}
+                  alt=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
               </button>
             ))}
-            {gifs && gifs.length === 0 && <p className="chat-janela__aviso">Nenhum GIF encontrado.</p>}
+            {gifs && gifs.length === 0 && (
+              <p className="chat-janela__aviso">Nenhum GIF encontrado.</p>
+            )}
           </div>
           <small className="chat-gifs__giphy">Powered by GIPHY</small>
         </div>
       )}
 
-      <form className="chat-janela__envio" onSubmit={enviar}>
-        <div className="chat-janela__eu">
-          {editandoApelido ? (
+      {!nomeDefinido ? (
+        <form
+          className="chat-janela__envio chat-nome"
+          onSubmit={definirNome}
+          data-testid="chat-nome"
+        >
+          <label htmlFor="chat-nome">Para conversar, diga seu nome</label>
+          <div className="chat-janela__linha">
             <input
-              className="chat-janela__apelido"
-              aria-label="Apelido (opcional)"
-              placeholder="Seu apelido"
-              value={apelido}
-              onChange={(e) => setApelido(e.target.value)}
-              onBlur={() => setEditandoApelido(false)}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), setEditandoApelido(false))}
+              id="chat-nome"
+              className="chat-nome__campo"
+              placeholder="Seu nome"
+              value={nomeDigitado}
+              onChange={(e) => setNomeDigitado(e.target.value)}
               maxLength={MAX_APELIDO}
               autoComplete="nickname"
               autoFocus
             />
-          ) : (
-            <button type="button" className="chat-janela__mudar" onClick={() => setEditandoApelido(true)} data-testid="chat-apelido">
-              <i className="chat-ponto" aria-hidden="true" /> {apelido.trim() || "Visitante"} <span aria-hidden="true">✎</span>
+            <button
+              type="submit"
+              className="chat-janela__enviar"
+              disabled={!nomeValido(nomeDigitado)}
+              data-testid="chat-entrar"
+            >
+              Entrar
             </button>
-          )}
-          <small>
-            {texto.length}/{MAX_TEXTO}
+          </div>
+          <small className="chat-nome__dica">
+            De 2 a {MAX_APELIDO} letras ou números. Fica salvo neste aparelho.
           </small>
-        </div>
-        <div className="chat-janela__linha">
-          <textarea
-            ref={campo}
-            aria-label="Mensagem do bate-papo"
-            placeholder="Digite uma mensagem…"
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void enviar();
-              }
-            }}
-            maxLength={MAX_TEXTO}
-            rows={2}
-          />
-          {gifsAtivos && (
+          {erro && (
+            <p className="fale__erro" role="alert">
+              {erro}
+            </p>
+          )}
+        </form>
+      ) : (
+        <form className="chat-janela__envio" onSubmit={enviar}>
+          <div className="chat-janela__eu">
             <button
               type="button"
-              className={`chat-janela__gifbtn${escolhendoGif ? " chat-janela__gifbtn--ativo" : ""}`}
-              onClick={() => setEscolhendoGif((v) => !v)}
-              aria-pressed={escolhendoGif}
-              aria-label="Escolher GIF"
-              data-testid="chat-gif-botao"
+              className="chat-janela__mudar"
+              onClick={() => (setNomeDigitado(apelido), setNomeDefinido(false))}
+              data-testid="chat-apelido"
+              aria-label={`Seu nome: ${apelido}. Trocar nome`}
             >
-              GIF
+              <i className="chat-ponto" aria-hidden="true" /> {apelido}{" "}
+              <span aria-hidden="true">✎</span>
             </button>
+            <small>
+              {texto.length}/{MAX_TEXTO}
+            </small>
+          </div>
+          <div className="chat-janela__linha">
+            <textarea
+              ref={campo}
+              aria-label="Mensagem do bate-papo"
+              placeholder="Digite uma mensagem…"
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void enviar();
+                }
+              }}
+              maxLength={MAX_TEXTO}
+              rows={2}
+            />
+            {gifsAtivos && (
+              <button
+                type="button"
+                className={`chat-janela__gifbtn${escolhendoGif ? " chat-janela__gifbtn--ativo" : ""}`}
+                onClick={() => setEscolhendoGif((v) => !v)}
+                aria-pressed={escolhendoGif}
+                aria-label="Escolher GIF"
+                data-testid="chat-gif-botao"
+              >
+                GIF
+              </button>
+            )}
+            <button
+              type="submit"
+              className="chat-janela__enviar"
+              disabled={enviando || texto.trim().length < 2}
+              data-testid="chat-enviar"
+            >
+              {enviando ? "…" : "Enviar"}
+            </button>
+          </div>
+          {/* Campo para robôs: escondido de pessoas. */}
+          <input
+            type="text"
+            name="site"
+            tabIndex={-1}
+            autoComplete="off"
+            className="fale__isca"
+            aria-hidden="true"
+          />
+          {erro && (
+            <p className="fale__erro" role="alert">
+              {erro}
+            </p>
           )}
-          <button type="submit" className="chat-janela__enviar" disabled={enviando || texto.trim().length < 2} data-testid="chat-enviar">
-            {enviando ? "…" : "Enviar"}
-          </button>
-        </div>
-        {/* Campo para robôs: escondido de pessoas. */}
-        <input type="text" name="site" tabIndex={-1} autoComplete="off" className="fale__isca" aria-hidden="true" />
-        {erro && (
-          <p className="fale__erro" role="alert">
-            {erro}
-          </p>
-        )}
-      </form>
+        </form>
+      )}
     </section>
   );
 }

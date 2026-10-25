@@ -52,9 +52,9 @@ describe("GIFs do GIPHY", () => {
   });
 
   it("mensagem pode ser só um GIF, mas o id tem de ser válido", () => {
-    expect(validarChat({ texto: "", aparelho: AP, gif: "AbC123xyz" })).toMatchObject({ ok: true, texto: "", gif: "AbC123xyz" });
-    expect(validarChat({ texto: "", aparelho: AP }).ok).toBe(false);
-    expect(validarChat({ texto: "oi", aparelho: AP, gif: "https://evil.com/x.gif" }).ok).toBe(false);
-    expect(validarChat({ texto: "vote no 13", aparelho: AP, gif: "AbC123xyz" }).ok).toBe(false);
+    expect(validarChat({ texto: "", apelido: "Ana", aparelho: AP, gif: "AbC123xyz" })).toMatchObject({ ok: true, texto: "", gif: "AbC123xyz" });
+    expect(validarChat({ texto: "", apelido: "Ana", aparelho: AP }).ok).toBe(false);
+    expect(validarChat({ texto: "oi", apelido: "Ana", aparelho: AP, gif: "https://evil.com/x.gif" }).ok).toBe(false);
+    expect(validarChat({ texto: "vote no 13", apelido: "Ana", aparelho: AP, gif: "AbC123xyz" }).ok).toBe(false);
   });
 });
