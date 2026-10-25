@@ -122,3 +122,9 @@ function mensagemErro(erro: unknown, oque: string): string {
   if (erro instanceof ErroFonte) return `${erro.message} (${oque}).`;
   return `Não foi possível interpretar a ${oque} do TSE.`;
 }
+
+/** UFs com 2º turno para Governador, segundo o ele-c.json do TSE. */
+export async function ufsGovernador(opcoes: OpcoesBusca = {}): Promise<string[]> {
+  const eleicao = (await carregarEleicoes(opcoes)).find((e) => e.cargo === "governador");
+  return eleicao ? eleicao.abrangencias.filter((u) => u !== "br" && eUfValida(u)) : [];
+}

@@ -32,6 +32,8 @@ export function normalizarResultado(
   cargo: CargoConfig,
   uf: string,
   fonteUrl: string,
+  /** Nome da abrangência quando não é UF (ex.: município). */
+  nomeAbrangencia?: string,
 ): ResultadoSegundoTurno {
   if (!eObj(dados)) throw new RespostaInvalida("Conteúdo não é um objeto JSON");
 
@@ -76,6 +78,7 @@ export function normalizarResultado(
             percentualCalculado: null,
             situacao,
             eleito: cand.e === "s" || cand.e === "S",
+            sqcand: codigo(cand.sqcand),
           });
         }
       }
@@ -109,7 +112,7 @@ export function normalizarResultado(
     cargo: cargo.id,
     cargoNome: cargo.nome,
     abrangencia: uf,
-    abrangenciaNome: UFS[uf] ?? uf.toUpperCase(),
+    abrangenciaNome: nomeAbrangencia ?? UFS[uf] ?? uf.toUpperCase(),
     codigoEleicao: cargo.codigoEleicao,
     turno: 2,
     candidatos,
@@ -123,6 +126,8 @@ export function normalizarResultado(
     },
     votos: {
       eleitorado: inteiroOuNulo(e.te),
+      eleitoradoApurado: inteiroOuNulo(e.est),
+      eleitoradoFaltando: inteiroOuNulo(e.esnt),
       comparecimento: inteiroOuNulo(e.c),
       abstencao: inteiroOuNulo(e.a),
       validos: inteiroOuNulo(v.vv),
