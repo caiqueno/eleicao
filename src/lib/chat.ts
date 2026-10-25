@@ -35,6 +35,8 @@ export interface MensagemChat {
   em: string;
   apelido: string;
   texto: string;
+  /** Id de um GIF do GIPHY (só o id; a URL é montada com o endereço fixo do GIPHY). */
+  gif?: string;
 }
 
 /** Como fica guardada: com os resumos de aparelho e IP, que só a moderação usa. */
@@ -76,7 +78,9 @@ const RE_APELIDO = /^[\p{L}\p{N} ._-]+$/u;
 const APELIDO_RESERVADO = /(tse|acompanhevotos|moderad|admin|oficial|equipe|suporte|justica eleitoral)/;
 const CONTROLE = /[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]/g;
 
-export type ValidacaoChat = { ok: true; apelido: string; texto: string; aparelho: string } | { ok: false; erro: string };
+export const GIF_ID = /^[A-Za-z0-9]{5,40}$/;
+
+export type ValidacaoChat = { ok: true; apelido: string; texto: string; aparelho: string; gif?: string } | { ok: false; erro: string };
 
 /** Regras de conteúdo valem para o texto e para o apelido. Devolve o erro ou null. */
 function problemaDeConteudo(s: string): string | null {
@@ -90,13 +94,15 @@ function problemaDeConteudo(s: string): string | null {
 
 export function validarChat(corpo: unknown): ValidacaoChat {
   if (!corpo || typeof corpo !== "object") return { ok: false, erro: "Pedido inválido" };
-  const { apelido, texto, aparelho, site } = corpo as Record<string, unknown>;
+  const { apelido, texto, aparelho, site, gif } = corpo as Record<string, unknown>;
   if (site) return { ok: false, erro: "Pedido inválido" };
   if (typeof texto !== "string" || typeof aparelho !== "string" || !APARELHO_VALIDO.test(aparelho)) return { ok: false, erro: "Pedido inválido" };
+  if (gif !== undefined && gif !== null && (typeof gif !== "string" || !GIF_ID.test(gif))) return { ok: false, erro: "GIF inválido" };
+  const g = typeof gif === "string" ? gif : undefined;
   if (apelido !== undefined && typeof apelido !== "string") return { ok: false, erro: "Pedido inválido" };
   const t = texto.replace(CONTROLE, "").replace(/\s+/g, " ").trim();
   const a = (apelido ?? "").replace(CONTROLE, "").replace(/\s+/g, " ").trim();
-  if (t.length < 2) return { ok: false, erro: "Escreva seu comentário" };
+  if (t.length < 2 && !(g && t.length === 0)) return { ok: false, erro: "Escreva seu comentário" };
   if (t.length > MAX_TEXTO_CHAT) return { ok: false, erro: `O comentário passa de ${MAX_TEXTO_CHAT} caracteres` };
   if (a) {
     if (a.length < 2 || a.length > MAX_APELIDO || !RE_APELIDO.test(a)) return { ok: false, erro: `Apelido: de 2 a ${MAX_APELIDO} letras ou números` };
@@ -104,14 +110,14 @@ export function validarChat(corpo: unknown): ValidacaoChat {
     const p = problemaDeConteudo(a);
     if (p) return { ok: false, erro: `Apelido: ${p.toLowerCase()}` };
   }
-  const p = problemaDeConteudo(t);
+  const p = t ? problemaDeConteudo(t) : null;
   if (p) return { ok: false, erro: p };
-  return { ok: true, apelido: a || "Visitante", texto: t, aparelho };
+  return { ok: true, apelido: a || "Visitante", texto: t, aparelho, ...(g ? { gif: g } : {}) };
 }
 
 export const resumo = (tipo: string, valor: string) => createHash("sha256").update(`av-chat:${tipo}:${valor}`).digest("hex").slice(0, 32);
 
-const publico = ({ id, em, apelido, texto }: MensagemChat): MensagemChat => ({ id, em, apelido, texto });
+const publico = ({ id, em, apelido, texto, gif }: MensagemChat): MensagemChat => ({ id, em, apelido, texto, ...(gif && GIF_ID.test(gif) ? { gif } : {}) });
 
 function lerRegistros(lista: unknown): Registro[] {
   if (!Array.isArray(lista)) return [];
@@ -134,7 +140,7 @@ const cfgDe = (o: Opcoes) => (o.cfg === undefined ? configRedis() : o.cfg);
 
 export type ResultadoChat = { ok: true; mensagem: MensagemChat } | { ok: false; motivo: "espere" | "limite" | "banido" | "indisponivel" };
 
-export async function publicarChat(dados: { apelido: string; texto: string; aparelho: string; ip: string }, opcoes: Opcoes = {}): Promise<ResultadoChat> {
+export async function publicarChat(dados: { apelido: string; texto: string; aparelho: string; ip: string; gif?: string }, opcoes: Opcoes = {}): Promise<ResultadoChat> {
   const cfg = cfgDe(opcoes);
   if (!cfg) return { ok: false, motivo: "indisponivel" };
   const f = opcoes.fetchImpl ?? fetch;
@@ -151,7 +157,7 @@ export async function publicarChat(dados: { apelido: string; texto: string; apar
     if (Number(banA) === 1 || Number(banI) === 1) return { ok: false, motivo: "banido" };
     if (Number(n1) > 1) return { ok: false, motivo: "espere" };
     if (Number(n2) > MAX_POR_JANELA) return { ok: false, motivo: "limite" };
-    const r: Registro = { id: randomUUID(), em: new Date(opcoes.agora ?? Date.now()).toISOString(), apelido: dados.apelido, texto: dados.texto, ah, ih };
+    const r: Registro = { id: randomUUID(), em: new Date(opcoes.agora ?? Date.now()).toISOString(), apelido: dados.apelido, texto: dados.texto, ...(dados.gif ? { gif: dados.gif } : {}), ah, ih };
     await pipeline(cfg, [["LPUSH", CHAVE_CHAT, JSON.stringify(r)], ["LTRIM", CHAVE_CHAT, 0, MAX_CHAT - 1], ["EXPIRE", CHAVE_CHAT, EXPIRA_CHAT_S]], f);
     return { ok: true, mensagem: publico(r) };
   } catch {
