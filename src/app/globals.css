@@ -2146,14 +2146,28 @@ a.plano,
   font-size: 10.5px;
 }
 .chat-msg__responder {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
   border: 0;
-  padding: 0 2px;
+  padding: 2px;
   background: none;
   color: var(--suave);
-  font: inherit;
-  font-size: 13px;
   cursor: pointer;
-  opacity: 0.8;
+  opacity: 0.75;
+}
+.chat-msg__responder svg {
+  width: 14px;
+  height: 14px;
+}
+@media (hover: hover) {
+  .chat-msg__responder {
+    opacity: 0;
+  }
+  .chat-msg:hover .chat-msg__responder,
+  .chat-msg__responder:focus-visible {
+    opacity: 0.8;
+  }
 }
 .chat-msg__citacao {
   display: block;
@@ -2186,6 +2200,7 @@ a.plano,
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
   padding: 4px 8px;
   border-left: 3px solid #1d6fd8;
   border-radius: 4px;
@@ -2227,6 +2242,8 @@ a.plano,
 }
 .chat-janela__envio {
   display: grid;
+  /* minmax(0, 1fr): um texto longo (como a faixa "Respondendo a") não alarga a coluna e não empurra o botão Enviar para fora. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   padding: 8px 10px 10px;
   border-top: 1px solid var(--borda);
@@ -2266,6 +2283,7 @@ a.plano,
   font-size: 16px;
 }
 .chat-janela__enviar {
+  flex-shrink: 0;
   min-width: 68px;
   border: 1px solid #0b3f91;
   border-radius: 8px;
