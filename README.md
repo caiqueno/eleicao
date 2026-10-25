@@ -79,6 +79,9 @@ O contador do topo conta os navegadores que mandaram um sinal nos últimos 100 s
   lidos do `ele-c.json` do TSE. A aplicação confere em tempo de execução se a eleição é de 2º turno.
 - O formato do arquivo de resultado está em `src/lib/tse/resultado.ts`; os testes com dados simulados ficam em
   `tests/unit/tse/`.
+- Os destinos do botão "Siga para a próxima eleição" e do patrocínio, e o valor do patrocínio, ficam em
+  `src/config/contato.ts`. Hoje os dois usam o WhatsApp do projeto; troque `SEGUIR_URL` pelo Instagram ou pelo canal
+  do WhatsApp quando existirem.
 - Para refazer os mapas, baixe os `geojs-XX-mun.json` numa pasta e rode
   `node scripts/mapas/gerar.mjs <pasta>`. O teste `tests/unit/mapas/` confere que todo município tem desenho e
   que os municípios cobrem o estado inteiro.

@@ -78,12 +78,32 @@ test("governadores: só as UFs com 2º turno", async ({ page }) => {
   await expect(page.locator(".multi__item")).toHaveCount(6);
 });
 
-test("anúncio abre o WhatsApp em nova aba", async ({ page }) => {
+test("patrocínio: oferta clara, sem preço inventado, abre o WhatsApp em nova aba", async ({ page }) => {
   await abrir(page, ANTES, false);
   const link = page.getByTestId("anuncio-whatsapp").first();
-  await expect(link).toHaveAttribute("href", "https://wa.me/5511944650268");
+  await expect(link).toHaveAttribute("href", /^https:\/\/wa\.me\/5511944650268\?text=/);
   await expect(link).toHaveAttribute("target", "_blank");
   await expect(link).toHaveAttribute("rel", /noopener/);
+  await expect(link).toContainText("Patrocine este espaço");
+  await expect(page.getByTestId("patrocinio-valor").first()).toHaveText("valor a combinar");
+});
+
+test("siga para a próxima eleição abre o contato em nova aba", async ({ page }) => {
+  await abrir(page, ANTES, false);
+  const link = page.getByTestId("seguir");
+  await expect(link).toHaveText(/Siga para a próxima eleição/);
+  await expect(link).toHaveAttribute("href", /^https:\/\/wa\.me\/5511944650268\?text=/);
+  await expect(link).toHaveAttribute("target", "_blank");
+});
+
+test("um só percentual de apuração, projeção marcada como estimativa", async ({ page }) => {
+  await abrir(page, DURANTE, true);
+  await expect(page.getByTestId("estado")).toContainText("41,37% das seções apuradas");
+  await expect(page.getByTestId("placar")).not.toContainText("41,4%");
+  await expect(page.getByTestId("secoes-totalizadas")).toHaveCount(0);
+  await expect(page.getByTestId("painel-projecao")).toContainText("Projeção (estimativa)");
+  // A simulação não traz brancos e nulos: a linha some em vez de mostrar 0.
+  await expect(page.getByTestId("boletim")).not.toContainText("Brancos e nulos");
 });
 
 test("busca de município", async ({ page }) => {

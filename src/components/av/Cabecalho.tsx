@@ -5,8 +5,8 @@ import type { CargoId } from "@/config/eleicao";
 import { UFS } from "@/config/eleicao";
 import { capitalizar, horaBrasilia, INICIO_DIVULGACAO_MS, type CandidatoBase } from "./util";
 import type { PontoHistorico } from "./hooks";
+import { PATROCINIO_URL, PATROCINIO_VALOR, SEGUIR_URL } from "@/config/contato";
 
-export const WHATSAPP_URL = "https://wa.me/5511944650268";
 
 function Icone({ nome }: { nome: "busca" | "globo" | "compartilhar" | "sol" | "lua" | "tela" | "whats" }) {
   const p = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
@@ -64,16 +64,27 @@ export function Anuncio({ compacto = false }: { compacto?: boolean }) {
   return (
     <a
       className={`patrocinio${compacto ? " patrocinio--compacto" : ""}`}
-      href={WHATSAPP_URL}
+      href={PATROCINIO_URL}
       target="_blank"
       rel="noopener noreferrer"
       data-testid="anuncio-whatsapp"
-      aria-label="Anúncio: clique aqui para anunciar pelo WhatsApp"
+      aria-label={`Patrocine o acompanhevotos: ${PATROCINIO_VALOR ?? "valor a combinar"}. Fale pelo WhatsApp`}
     >
-      <span className="patrocinio__rotulo">Espaço de patrocínio</span>
-      <span className="patrocinio__acao">
-        <Icone nome="whats" /> Clique aqui
+      <span className="patrocinio__rotulo">
+        Patrocine este espaço · <b data-testid="patrocinio-valor">{PATROCINIO_VALOR ?? "valor a combinar"}</b>
       </span>
+      <span className="patrocinio__acao">
+        <Icone nome="whats" /> Fale com a gente
+      </span>
+    </a>
+  );
+}
+
+/** Convite para acompanhar a próxima eleição. O destino fica em src/config/contato.ts. */
+export function Seguir() {
+  return (
+    <a className="seguir" href={SEGUIR_URL} target="_blank" rel="noopener noreferrer" data-testid="seguir">
+      <Icone nome="whats" /> Siga para a próxima eleição
     </a>
   );
 }
@@ -127,8 +138,8 @@ export function Cabecalho(p: PropsCab) {
         <Anuncio />
       </div>
       <nav className="icones" aria-label="Ações">
-        <button type="button" className="icone" onClick={p.aoBuscar} aria-label="Buscar município" data-testid="botao-busca">
-          <Icone nome="busca" />
+        <button type="button" className="busca-topo" onClick={p.aoBuscar} aria-label="Buscar município" data-testid="botao-busca">
+          <Icone nome="busca" /> <span className="busca-topo__texto">Buscar sua cidade</span>
         </button>
         {p.cargo === "presidente" && (
           <button

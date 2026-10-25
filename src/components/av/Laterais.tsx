@@ -102,15 +102,18 @@ export function PainelProjecao(p: PropsProjecao) {
     <aside className="lateral lateral--esq" aria-label="Projeção e comparação com o 1º turno" data-testid="painel-projecao">
       {p.topo}
       <section className="bloco">
-        <h3 className="bloco__titulo">Projeção</h3>
-        <p className="bloco__sub">Como a apuração deve terminar · estimativa do acompanhevotos, não é resultado oficial</p>
+        <h3 className="bloco__titulo">Projeção (estimativa)</h3>
+        <p className="bloco__sub">Cálculo do acompanhevotos sobre como a apuração pode terminar. Não é dado do TSE nem resultado oficial.</p>
         <div className="proj">
           {p.candidatos.map((c, i) => (
             <div key={c.numero} className={`proj__cand proj__cand--${i ? "dir" : "esq"}`}>
               <Foto cargo={p.cargo} uf={p.uf} c={c} cor={p.cores[i]} tam={36} />
               <span>
                 <span className="proj__nome">{nomeCurto(c.nome)}</span>
-                <b style={{ color: p.cores[i] }}>{p.projecao ? pct1(i === 0 ? p.projecao.a : 100 - p.projecao.a) : "—"}</b>
+                <b style={{ color: p.cores[i] }} data-testid="projecao-valor">
+                  {p.projecao ? `≈ ${pct1(i === 0 ? p.projecao.a : 100 - p.projecao.a)}` : "—"}
+                </b>
+                {p.projecao && <small className="proj__rotulo">estimado</small>}
               </span>
             </div>
           ))}
@@ -260,7 +263,7 @@ export function PainelDetalhe(p: PropsDetalhe) {
         <div>
           <h2 className="det__titulo">{p.titulo}</h2>
           <p className="det__sub">
-            {p.subtitulo ?? (a ? `${pct1(a.percentualSecoes ?? 0)} das seções · ${compacto(a.eleitorado, false)} de eleitores` : "carregando…")}
+            {p.subtitulo ?? (a ? `${pct2(a.percentualSecoes)} das seções · ${compacto(a.eleitorado, false)} de eleitores` : "carregando…")}
           </p>
         </div>
         {p.aoFechar && (
