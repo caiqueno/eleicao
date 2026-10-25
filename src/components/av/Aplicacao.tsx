@@ -237,7 +237,7 @@ export function Aplicacao() {
         aoTema={() => definirTema(tema === "escuro" ? "claro" : "escuro")}
         aoCompartilhar={compartilhar}
         aviso={aviso}
-        presenca={<Presenca n={pessoas} />}
+        presenca={<Presenca agora={pessoas.agora} hoje={pessoas.hoje} />}
       />
       <div className="faixa-anuncio">
         <Anuncio compacto />

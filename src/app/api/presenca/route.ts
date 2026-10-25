@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 const SEM_CACHE = { "Cache-Control": "no-store" };
 
-/** Sinal de "estou com a página aberta". Corpo: {"id": "<32 hex>"}. Resposta: {"agora": n} ou {"agora": null}. */
+/** Sinal de "estou com a página aberta". Corpo: {"id": "<32 hex>"}. Resposta: {"agora": n, "hoje": m}, com null onde estiver indisponível. */
 export async function POST(req: NextRequest) {
   if (Number(req.headers.get("content-length") ?? 0) > 200) {
     return NextResponse.json({ erro: "Corpo grande demais" }, { status: 413, headers: SEM_CACHE });
@@ -21,6 +21,5 @@ export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "?";
   if (!aceitarId(ip, id)) return NextResponse.json({ erro: "Muitos sinais" }, { status: 429, headers: SEM_CACHE });
 
-  const agora = await registrarSinal(id);
-  return NextResponse.json({ agora }, { headers: SEM_CACHE });
+  return NextResponse.json(await registrarSinal(id), { headers: SEM_CACHE });
 }

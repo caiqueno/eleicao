@@ -125,7 +125,21 @@ test("contador de pessoas: aparece com número e some quando indisponível", asy
   await page.clock.setFixedTime(new Date(DURANTE));
   await simularApi(page, true, 1234);
   await page.goto("/#presidente");
-  await expect(page.getByTestId("presenca")).toContainText("1.234 pessoas acompanhando");
+  const contador = page.getByTestId("presenca");
+  await expect(contador).toBeVisible();
+  await expect(page.getByTestId("presenca-agora")).toHaveText("1.234");
+  await expect(contador).toContainText("pessoas acompanhando agora");
+  await expect(page.getByTestId("presenca-hoje")).toHaveText("56.789");
+  await expect(contador).toContainText("hoje");
+  await expect(page.getByText(/tempo real/i)).toHaveCount(0);
+});
+
+test("contador sem total do dia mostra só quem está agora", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(DURANTE));
+  await simularApi(page, true, 1, null);
+  await page.goto("/#presidente");
+  await expect(page.getByTestId("presenca")).toContainText("1 pessoa acompanhando agora");
+  await expect(page.getByTestId("presenca-hoje")).toHaveCount(0);
 });
 
 test("contador de pessoas indisponível não mostra número inventado", async ({ page }) => {

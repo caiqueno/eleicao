@@ -158,13 +158,21 @@ export function Boletim(p: PropsBoletim) {
   );
 }
 
-/** Pessoas com a página aberta agora (só aparece quando o contador está configurado). */
-export function Presenca({ n }: { n: number | null }) {
-  if (n === null) return null;
+/** Pessoas com a página aberta agora e aparelhos diferentes hoje (só aparece quando o contador está configurado). */
+export function Presenca({ agora, hoje }: { agora: number | null; hoje: number | null }) {
+  if (agora === null) return null;
   return (
-    <span className="presenca" data-testid="presenca" title="Aparelhos com esta página aberta nos últimos 100 segundos">
-      <span className="presenca__ponto" aria-hidden="true" />
-      <b>{inteiro(n)}</b> {n === 1 ? "pessoa acompanhando" : "pessoas acompanhando"}
-    </span>
+    <div className="presenca" data-testid="presenca" role="status" aria-live="off">
+      <span className="presenca__agora" title="Aparelhos com esta página aberta nos últimos 100 segundos">
+        <span className="presenca__ponto" aria-hidden="true" />
+        <b data-testid="presenca-agora">{inteiro(agora)}</b>{" "}
+        <span>{agora === 1 ? "pessoa acompanhando agora" : "pessoas acompanhando agora"}</span>
+      </span>
+      {hoje !== null && (
+        <span className="presenca__hoje" title="Aparelhos diferentes que abriram o site hoje (horário de Brasília)">
+          <b data-testid="presenca-hoje">{inteiro(hoje)}</b> hoje
+        </span>
+      )}
+    </div>
   );
 }
