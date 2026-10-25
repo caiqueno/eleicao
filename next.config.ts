@@ -15,7 +15,10 @@ const CSP = [
 ].join("; ");
 
 /** Endereços antigos da Vercel que passam a levar ao domínio oficial (mantendo caminho e parâmetros). */
-const HOSTS_ANTIGOS = ["acompanhevotos.vercel.app", "wwwacompanhevotos.vercel.app"];
+// Desligado enquanto o DNS do acompanhevotos.com.br está fora (25/10, 18h): o endereço da Vercel
+// precisa funcionar sozinho. Para religar, voltar a lista com "acompanhevotos.vercel.app" e
+// "wwwacompanhevotos.vercel.app".
+const HOSTS_ANTIGOS: string[] = [];
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
