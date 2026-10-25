@@ -275,8 +275,14 @@ test("bate-papo: aba estilo MSN abre a janela, regras visíveis, texto sem HTML,
   const lista = page.getByTestId("chat-lista");
   await expect(lista).toContainText("<b>apuração</b> andando rápido");
   await expect(lista.locator("b", { hasText: /^apuração$/ })).toHaveCount(0);
-  await page.getByTestId("chat-apelido").click();
-  await chat.getByLabel("Apelido (opcional)").fill("Bia");
+  // Sem nome não dá para escrever: a janela pede o nome primeiro.
+  await expect(chat.getByLabel("Mensagem do bate-papo")).toHaveCount(0);
+  await expect(page.getByTestId("chat-entrar")).toBeDisabled();
+  await chat.getByLabel("Para conversar, diga seu nome").fill(" ");
+  await expect(page.getByTestId("chat-entrar")).toBeDisabled();
+  await chat.getByLabel("Para conversar, diga seu nome").fill("Bia");
+  await page.getByTestId("chat-entrar").click();
+  await expect(page.getByTestId("chat-apelido")).toContainText("Bia");
   await chat.getByLabel("Mensagem do bate-papo").fill("Acompanhando daqui de Salvador");
   await chat.getByLabel("Mensagem do bate-papo").press("Enter");
   const msgs = page.getByTestId("chat-msg");
@@ -289,6 +295,11 @@ test("bate-papo: aba estilo MSN abre a janela, regras visíveis, texto sem HTML,
   await page.getByTestId("chat-minimizar").click();
   await expect(page.getByTestId("chat-aba")).toBeVisible();
   await expect(page.getByTestId("chat-novas")).toHaveCount(0);
+  // O nome fica salvo no aparelho: depois de recarregar não pede de novo.
+  await page.reload();
+  await page.getByTestId("chat-aba").click();
+  await expect(page.getByTestId("chat-apelido")).toContainText("Bia");
+  await expect(page.getByTestId("chat-nome")).toHaveCount(0);
   expect(erros).toEqual([]);
 });
 
@@ -306,6 +317,8 @@ test("bate-papo: mensagens novas aparecem sozinhas e dá para mandar GIF", async
   await expect(lista).toContainText("primeira");
   novas = true;
   await expect(lista).toContainText("chegou sem recarregar", { timeout: 8000 });
+  await page.getByLabel("Para conversar, diga seu nome").fill("Rui SP");
+  await page.getByLabel("Para conversar, diga seu nome").press("Enter");
 
   await page.getByTestId("chat-gif-botao").click();
   const painel = page.getByTestId("chat-gifs");

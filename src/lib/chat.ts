@@ -75,7 +75,7 @@ const RE_DOCUMENTO = /\d(?:[\s.\-()/]*\d){9,}/;
 /** Pedido de voto ("vote no 13", "votem em fulano"): o chat não é lugar de propaganda. */
 const RE_PEDIDO_VOTO = /(^| )(vote|votem|vota|votar)( n[oa]s?| em| \d)/;
 const RE_APELIDO = /^[\p{L}\p{N} ._-]+$/u;
-const APELIDO_RESERVADO = /(tse|acompanhevotos|moderad|admin|oficial|equipe|suporte|justica eleitoral)/;
+const APELIDO_RESERVADO = /(tse|acompanhevotos|moderad|admin|oficial|equipe|suporte|justica eleitoral|visitante|anonim)/;
 const CONTROLE = /[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]/g;
 
 export const GIF_ID = /^[A-Za-z0-9]{5,40}$/;
@@ -104,15 +104,14 @@ export function validarChat(corpo: unknown): ValidacaoChat {
   const a = (apelido ?? "").replace(CONTROLE, "").replace(/\s+/g, " ").trim();
   if (t.length < 2 && !(g && t.length === 0)) return { ok: false, erro: "Escreva seu comentário" };
   if (t.length > MAX_TEXTO_CHAT) return { ok: false, erro: `O comentário passa de ${MAX_TEXTO_CHAT} caracteres` };
-  if (a) {
-    if (a.length < 2 || a.length > MAX_APELIDO || !RE_APELIDO.test(a)) return { ok: false, erro: `Apelido: de 2 a ${MAX_APELIDO} letras ou números` };
-    if (APELIDO_RESERVADO.test(normalizar(a))) return { ok: false, erro: "Escolha outro apelido" };
-    const p = problemaDeConteudo(a);
-    if (p) return { ok: false, erro: `Apelido: ${p.toLowerCase()}` };
-  }
+  if (!a) return { ok: false, erro: "Informe seu nome para conversar" };
+  if (a.length < 2 || a.length > MAX_APELIDO || !RE_APELIDO.test(a)) return { ok: false, erro: `Nome: de 2 a ${MAX_APELIDO} letras ou números` };
+  if (APELIDO_RESERVADO.test(normalizar(a))) return { ok: false, erro: "Escolha outro nome" };
+  const pa = problemaDeConteudo(a);
+  if (pa) return { ok: false, erro: `Nome: ${pa.toLowerCase()}` };
   const p = t ? problemaDeConteudo(t) : null;
   if (p) return { ok: false, erro: p };
-  return { ok: true, apelido: a || "Visitante", texto: t, aparelho, ...(g ? { gif: g } : {}) };
+  return { ok: true, apelido: a, texto: t, aparelho, ...(g ? { gif: g } : {}) };
 }
 
 export const resumo = (tipo: string, valor: string) => createHash("sha256").update(`av-chat:${tipo}:${valor}`).digest("hex").slice(0, 32);

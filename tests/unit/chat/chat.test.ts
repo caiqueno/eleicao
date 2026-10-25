@@ -59,9 +59,13 @@ function redisFalso() {
 }
 
 describe("validação do chat", () => {
-  const ok = (texto: string, apelido?: string) => validarChat({ texto, apelido, aparelho: AP });
-  it("aceita comentário normal e usa Visitante sem apelido", () => {
-    expect(ok("  Apuração   bem rápida hoje ")).toEqual({ ok: true, apelido: "Visitante", texto: "Apuração bem rápida hoje", aparelho: AP });
+  const ok = (texto: string, apelido: string | undefined = "Ana BA") => validarChat({ texto, apelido, aparelho: AP });
+  it("aceita comentário normal e exige o nome", () => {
+    expect(ok("  Apuração   bem rápida hoje ", "  Ana   BA ")).toEqual({ ok: true, apelido: "Ana BA", texto: "Apuração bem rápida hoje", aparelho: AP });
+    expect(validarChat({ texto: "oi tudo bem", aparelho: AP })).toEqual({ ok: false, erro: "Informe seu nome para conversar" });
+    expect(ok("oi tudo bem", "   ")).toEqual({ ok: false, erro: "Informe seu nome para conversar" });
+    expect(ok("oi tudo bem", "Visitante").ok).toBe(false);
+    expect(ok("oi tudo bem", "x")).toEqual({ ok: false, erro: "Nome: de 2 a 24 letras ou números" });
     expect(ok("Que virada no Nordeste!", "Ana BA")).toMatchObject({ ok: true, apelido: "Ana BA" });
     expect(ok("26.100.000 votos já").ok).toBe(true);
     expect(ok("Computação dos votos está lenta").ok).toBe(true);
@@ -82,8 +86,8 @@ describe("validação do chat", () => {
     expect(ok("oi tudo bem", "Moderador").ok).toBe(false);
     expect(ok("oi tudo bem", "<b>x</b>").ok).toBe(false);
     expect(ok("oi tudo bem", "merdinha").ok).toBe(false);
-    expect(validarChat({ texto: "oi tudo bem", aparelho: "x" }).ok).toBe(false);
-    expect(validarChat({ texto: "oi tudo bem", aparelho: AP, site: "robo" }).ok).toBe(false);
+    expect(validarChat({ texto: "oi tudo bem", apelido: "Ana", aparelho: "x" }).ok).toBe(false);
+    expect(validarChat({ texto: "oi tudo bem", apelido: "Ana", aparelho: AP, site: "robo" }).ok).toBe(false);
     expect(ok("a".repeat(281)).ok).toBe(false);
   });
 });
