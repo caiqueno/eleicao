@@ -156,3 +156,13 @@ test("compartilhar: gera a imagem para Stories e feed com o placar parcial", asy
   }
   await expect(page.getByTestId("compartilhar")).toContainText("Imagem salva");
 });
+
+test("compartilhar: opções com os ícones dos aplicativos", async ({ page }, info) => {
+  await abrir(page, DURANTE, true);
+  await page.getByTestId("botao-compartilhar").click();
+  const janela = page.getByTestId("compartilhar");
+  await expect(janela).toBeVisible();
+  await expect(janela.locator("svg.icone-app")).toHaveCount(await janela.locator("button").count() - 1);
+  await expect(janela).toContainText("Instagram Stories");
+  if (process.env.CAPTURAS) await page.screenshot({ path: `${process.env.CAPTURAS}/${info.project.name}-compartilhar.png` });
+});

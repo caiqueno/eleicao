@@ -1205,6 +1205,17 @@ a {
   .icone--desk {
     display: none;
   }
+  .topo {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .icones {
+    flex-shrink: 0;
+  }
+  .topo .presenca {
+    order: 4;
+    margin: 0 auto;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1608,4 +1619,15 @@ a {
   background: var(--painel-2);
   font-size: 13px;
   word-break: break-all;
+}
+
+.compartilhar__botao .icone-app {
+  margin-bottom: 6px;
+}
+.compartilhar__mais,
+.boletim__whats {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }

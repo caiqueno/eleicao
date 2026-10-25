@@ -4,6 +4,7 @@ import type { ResultadoSegundoTurno } from "@/lib/tipos";
 import type { AreaMapa } from "@/lib/tse/mapa";
 import type { PrimeiroTurnoArea } from "@/lib/tse/primeiroTurno";
 import { UFS } from "@/config/eleicao";
+import { IconeApp } from "./IconesApps";
 import { capitalizar, compacto, horaBrasilia, INICIO_DIVULGACAO_MS, inteiro, nomeCurto, parcelas, pct2, relogio, type CandidatoBase } from "./util";
 
 /** Quem está à frente em cada área com votos (índice 0 ou 1), sem empates. */
@@ -150,7 +151,7 @@ export function Boletim(p: PropsBoletim) {
         </>
       )}
       <button type="button" className="boletim__whats" onClick={p.aoWhatsapp} data-testid="mandar-whatsapp">
-        Mandar no WhatsApp
+        <IconeApp app="whatsapp" tam={20} /> Mandar no WhatsApp
       </button>
       <p className="boletim__nota">“À frente” e “virada” usam só os votos já apurados pelo TSE e podem mudar. Não é resultado final.</p>
     </section>
