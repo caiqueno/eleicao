@@ -1808,3 +1808,139 @@ a.plano,
     font-weight: 700;
   }
 }
+
+/* ------------------------------------------------------ fale com a gente -- */
+
+.fale {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 40;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--borda-forte);
+  background: var(--painel);
+  color: var(--texto);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: var(--sombra);
+  cursor: pointer;
+}
+.fale__caixa {
+  padding: 0 16px 16px;
+}
+.fale__cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+.fale__form {
+  display: grid;
+  gap: 10px;
+}
+.fale__form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--suave);
+}
+.fale__form textarea,
+.fale__form input[type="email"] {
+  width: 100%;
+  border: 1px solid var(--borda-forte);
+  border-radius: 8px;
+  background: var(--fundo, transparent);
+  color: var(--texto);
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 16px;
+}
+.fale__form small {
+  justify-self: end;
+}
+.fale__form .fale__aceite {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--texto);
+}
+.fale__isca {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+}
+.fale__nota {
+  margin: 0;
+  font-size: 12px;
+  color: var(--suave);
+}
+.fale__erro {
+  margin: 0;
+  color: #e5484d;
+  font-size: 13px;
+}
+.fale__ok {
+  margin: 0 0 6px;
+}
+.fale__enviar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: #1f8f4e;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fale__enviar:disabled {
+  opacity: 0.6;
+}
+
+.inbox {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+.inbox__form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.inbox__form input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 10px;
+  font-size: 16px;
+}
+.inbox__lista {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.inbox__lista li {
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--painel);
+}
+.inbox__lista p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.inbox__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--suave);
+}

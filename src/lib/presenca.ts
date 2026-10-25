@@ -79,7 +79,7 @@ export function aceitarId(ip: string, id: string, agora = Date.now()): boolean {
   return true;
 }
 
-async function pipeline(cfg: ConfigRedis, comandos: (string | number)[][], fetchImpl: typeof fetch): Promise<unknown[]> {
+export async function pipeline(cfg: ConfigRedis, comandos: (string | number)[][], fetchImpl: typeof fetch): Promise<unknown[]> {
   const r = await fetchImpl(`${cfg.url}/pipeline`, {
     method: "POST",
     headers: { Authorization: `Bearer ${cfg.token}`, "Content-Type": "application/json" },
