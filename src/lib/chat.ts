@@ -17,6 +17,8 @@ const CHAVE_BANIDOS = "av:chat:ban";
 const PREFIXO_DENUNCIA = "av:chat:den:";
 export const MAX_TEXTO_CHAT = 280;
 export const MAX_APELIDO = 24;
+/** Tamanho do trecho da mensagem respondida. */
+export const MAX_TRECHO = 80;
 const MAX_CHAT = 200;
 /** Quantas a página pública mostra. */
 export const MOSTRAR = 100;
@@ -30,6 +32,15 @@ export const DENUNCIAS_PARA_OCULTAR = 3;
 const ID_VALIDO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const APARELHO_VALIDO = /^[a-f0-9]{32}$/;
 
+/** Trecho da mensagem respondida, copiado pelo servidor da própria lista (nunca do que o navegador manda). */
+export interface RespostaChat {
+  id: string;
+  apelido: string;
+  texto: string;
+  /** A mensagem respondida foi ocultada pela moderação: o trecho não é mostrado. */
+  removida?: true;
+}
+
 export interface MensagemChat {
   id: string;
   em: string;
@@ -37,6 +48,8 @@ export interface MensagemChat {
   texto: string;
   /** Id de um GIF do GIPHY (só o id; a URL é montada com o endereço fixo do GIPHY). */
   gif?: string;
+  /** Mensagem a que esta responde. */
+  resp?: RespostaChat;
 }
 
 /** Como fica guardada: com os resumos de aparelho e IP, que só a moderação usa. */
@@ -80,7 +93,7 @@ const CONTROLE = /[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]/g;
 
 export const GIF_ID = /^[A-Za-z0-9]{5,40}$/;
 
-export type ValidacaoChat = { ok: true; apelido: string; texto: string; aparelho: string; gif?: string } | { ok: false; erro: string };
+export type ValidacaoChat = { ok: true; apelido: string; texto: string; aparelho: string; gif?: string; resposta?: string } | { ok: false; erro: string };
 
 /** Regras de conteúdo valem para o texto e para o apelido. Devolve o erro ou null. */
 function problemaDeConteudo(s: string): string | null {
@@ -94,11 +107,13 @@ function problemaDeConteudo(s: string): string | null {
 
 export function validarChat(corpo: unknown): ValidacaoChat {
   if (!corpo || typeof corpo !== "object") return { ok: false, erro: "Pedido inválido" };
-  const { apelido, texto, aparelho, site, gif } = corpo as Record<string, unknown>;
+  const { apelido, texto, aparelho, site, gif, resposta } = corpo as Record<string, unknown>;
   if (site) return { ok: false, erro: "Pedido inválido" };
   if (typeof texto !== "string" || typeof aparelho !== "string" || !APARELHO_VALIDO.test(aparelho)) return { ok: false, erro: "Pedido inválido" };
   if (gif !== undefined && gif !== null && (typeof gif !== "string" || !GIF_ID.test(gif))) return { ok: false, erro: "GIF inválido" };
   const g = typeof gif === "string" ? gif : undefined;
+  if (resposta !== undefined && resposta !== null && (typeof resposta !== "string" || !ID_VALIDO.test(resposta))) return { ok: false, erro: "Pedido inválido" };
+  const re = typeof resposta === "string" ? resposta : undefined;
   if (apelido !== undefined && typeof apelido !== "string") return { ok: false, erro: "Pedido inválido" };
   const t = texto.replace(CONTROLE, "").replace(/\s+/g, " ").trim();
   const a = (apelido ?? "").replace(CONTROLE, "").replace(/\s+/g, " ").trim();
@@ -111,12 +126,28 @@ export function validarChat(corpo: unknown): ValidacaoChat {
   if (pa) return { ok: false, erro: `Nome: ${pa.toLowerCase()}` };
   const p = t ? problemaDeConteudo(t) : null;
   if (p) return { ok: false, erro: p };
-  return { ok: true, apelido: a, texto: t, aparelho, ...(g ? { gif: g } : {}) };
+  return { ok: true, apelido: a, texto: t, aparelho, ...(g ? { gif: g } : {}), ...(re ? { resposta: re } : {}) };
 }
 
 export const resumo = (tipo: string, valor: string) => createHash("sha256").update(`av-chat:${tipo}:${valor}`).digest("hex").slice(0, 32);
 
-const publico = ({ id, em, apelido, texto, gif }: MensagemChat): MensagemChat => ({ id, em, apelido, texto, ...(gif && GIF_ID.test(gif) ? { gif } : {}) });
+function respostaValida(r: unknown): RespostaChat | null {
+  if (!r || typeof r !== "object") return null;
+  const { id, apelido, texto, removida } = r as Record<string, unknown>;
+  if (typeof id !== "string" || !ID_VALIDO.test(id) || typeof apelido !== "string" || typeof texto !== "string") return null;
+  return { id, apelido, texto, ...(removida === true ? { removida: true as const } : {}) };
+}
+
+const publico = ({ id, em, apelido, texto, gif, resp }: MensagemChat): MensagemChat => {
+  const r = respostaValida(resp);
+  return { id, em, apelido, texto, ...(gif && GIF_ID.test(gif) ? { gif } : {}), ...(r ? { resp: r } : {}) };
+};
+
+/** Trecho curto da mensagem respondida (só "GIF" quando ela não tem texto). */
+export function trecho(m: MensagemChat): string {
+  if (!m.texto) return m.gif ? "GIF" : "";
+  return m.texto.length > MAX_TRECHO ? `${m.texto.slice(0, MAX_TRECHO - 1).trimEnd()}…` : m.texto;
+}
 
 function lerRegistros(lista: unknown): Registro[] {
   if (!Array.isArray(lista)) return [];
@@ -137,9 +168,12 @@ interface Opcoes {
 }
 const cfgDe = (o: Opcoes) => (o.cfg === undefined ? configRedis() : o.cfg);
 
-export type ResultadoChat = { ok: true; mensagem: MensagemChat } | { ok: false; motivo: "espere" | "limite" | "banido" | "indisponivel" };
+export type ResultadoChat = { ok: true; mensagem: MensagemChat } | { ok: false; motivo: "espere" | "limite" | "banido" | "indisponivel" | "resposta" };
 
-export async function publicarChat(dados: { apelido: string; texto: string; aparelho: string; ip: string; gif?: string }, opcoes: Opcoes = {}): Promise<ResultadoChat> {
+export async function publicarChat(
+  dados: { apelido: string; texto: string; aparelho: string; ip: string; gif?: string; resposta?: string },
+  opcoes: Opcoes = {},
+): Promise<ResultadoChat> {
   const cfg = cfgDe(opcoes);
   if (!cfg) return { ok: false, motivo: "indisponivel" };
   const f = opcoes.fetchImpl ?? fetch;
@@ -156,7 +190,24 @@ export async function publicarChat(dados: { apelido: string; texto: string; apar
     if (Number(banA) === 1 || Number(banI) === 1) return { ok: false, motivo: "banido" };
     if (Number(n1) > 1) return { ok: false, motivo: "espere" };
     if (Number(n2) > MAX_POR_JANELA) return { ok: false, motivo: "limite" };
-    const r: Registro = { id: randomUUID(), em: new Date(opcoes.agora ?? Date.now()).toISOString(), apelido: dados.apelido, texto: dados.texto, ...(dados.gif ? { gif: dados.gif } : {}), ah, ih };
+    let resp: RespostaChat | undefined;
+    if (dados.resposta) {
+      // O trecho citado vem da lista guardada, e só de mensagem visível: ninguém cita o que não foi dito.
+      const [lista, oculta] = await pipeline(cfg, [["LRANGE", CHAVE_CHAT, 0, MAX_CHAT - 1], ["SISMEMBER", CHAVE_OCULTAS, dados.resposta]], f);
+      const alvo = lerRegistros(lista).find((m) => m.id === dados.resposta);
+      if (!alvo || Number(oculta) === 1) return { ok: false, motivo: "resposta" };
+      resp = { id: alvo.id, apelido: alvo.apelido, texto: trecho(alvo) };
+    }
+    const r: Registro = {
+      id: randomUUID(),
+      em: new Date(opcoes.agora ?? Date.now()).toISOString(),
+      apelido: dados.apelido,
+      texto: dados.texto,
+      ...(dados.gif ? { gif: dados.gif } : {}),
+      ...(resp ? { resp } : {}),
+      ah,
+      ih,
+    };
     await pipeline(cfg, [["LPUSH", CHAVE_CHAT, JSON.stringify(r)], ["LTRIM", CHAVE_CHAT, 0, MAX_CHAT - 1], ["EXPIRE", CHAVE_CHAT, EXPIRA_CHAT_S]], f);
     return { ok: true, mensagem: publico(r) };
   } catch {
@@ -173,7 +224,8 @@ export async function lerChat(opcoes: Opcoes = {}): Promise<MensagemChat[] | nul
     const fora = new Set(Array.isArray(ocultas) ? ocultas.map(String) : []);
     return lerRegistros(lista)
       .filter((r) => !fora.has(r.id))
-      .map(publico);
+      .map(publico)
+      .map((m) => (m.resp && fora.has(m.resp.id) ? { ...m, resp: { id: m.resp.id, apelido: "", texto: "", removida: true as const } } : m));
   } catch {
     return null;
   }

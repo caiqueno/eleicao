@@ -303,6 +303,32 @@ test("bate-papo: aba estilo MSN abre a janela, regras visíveis, texto sem HTML,
   expect(erros).toEqual([]);
 });
 
+test("bate-papo: responder uma mensagem mostra a citação, como reply", async ({ page }) => {
+  const { erros } = await abrir(page, DURANTE, true);
+  await page.getByTestId("chat-aba").click();
+  const chat = page.getByTestId("chat");
+  // Sem nome, não aparece o botão de responder.
+  await expect(chat.getByTestId("chat-responder")).toHaveCount(0);
+  await chat.getByLabel("Para conversar, diga seu nome").fill("Bia");
+  await page.getByTestId("chat-entrar").click();
+  const msgs = page.getByTestId("chat-msg");
+  await msgs.first().getByTestId("chat-responder").click();
+  await expect(page.getByTestId("chat-respondendo")).toContainText("Respondendo a Ana");
+  await page.getByTestId("chat-cancelar-resposta").click();
+  await expect(page.getByTestId("chat-respondendo")).toHaveCount(0);
+  await msgs.first().getByTestId("chat-responder").click();
+  const enviado = page.waitForRequest((r) => r.url().endsWith("/api/chat") && r.method() === "POST");
+  await chat.getByLabel("Mensagem do bate-papo").fill("Aqui também");
+  await chat.getByLabel("Mensagem do bate-papo").press("Enter");
+  expect((await enviado).postDataJSON()).toMatchObject({ resposta: "00000000-0000-4000-8000-000000000001" });
+  const ultima = msgs.last();
+  await expect(ultima).toContainText("Aqui também");
+  await expect(ultima.getByTestId("chat-citacao")).toContainText("Ana");
+  await expect(ultima.getByTestId("chat-citacao")).toContainText("<b>apuração</b> andando rápido");
+  await expect(page.getByTestId("chat-respondendo")).toHaveCount(0);
+  expect(erros).toEqual([]);
+});
+
 test("bate-papo: mensagens novas aparecem sozinhas e dá para mandar GIF", async ({ page }) => {
   const { erros } = await abrir(page, DURANTE, true);
   const base = { id: "00000000-0000-4000-8000-000000000001", em: "2026-10-25T22:20:00.000Z", apelido: "Ana", texto: "primeira" };
