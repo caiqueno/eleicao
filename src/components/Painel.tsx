@@ -114,6 +114,14 @@ function avisoDoEstado(
     case "finalizada":
       return { tipo: "sucesso", titulo: "Totalização encerrada", texto: "O TSE indica que a totalização desta seleção foi concluída." };
     case "ok":
+      if (r.resposta?.resultado?.totalizacao.secoesTotalizadas === 0) {
+        return {
+          tipo: "info",
+          titulo: "Apuração ainda não começou",
+          texto:
+            "O TSE já publicou o arquivo desta seleção, mas nenhuma seção foi totalizada. Os votos aparecem aqui conforme o TSE divulga, após o encerramento da votação.",
+        };
+      }
       return null;
   }
 }
@@ -290,7 +298,7 @@ export function Painel() {
               <h2 id="candidatos-titulo" className="bloco-titulo">
                 Candidatos
               </h2>
-              <p className="bloco-nota">ordenado por votos</p>
+              <p className="bloco-nota">ordenado por votos (empate: ordem alfabética)</p>
             </div>
             {candidatos.length === 0 ? (
               <p className="vazio">A fonte não informou candidatos para esta seleção.</p>

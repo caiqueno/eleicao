@@ -87,7 +87,7 @@ export function normalizarResultado(
   for (const c of candidatos) {
     c.percentualCalculado = somaVotos && c.votos !== null ? (c.votos / somaVotos) * 100 : null;
   }
-  candidatos.sort((a, b) => (b.votos ?? -1) - (a.votos ?? -1) || a.numero.localeCompare(b.numero));
+  candidatos.sort((a, b) => (b.votos ?? -1) - (a.votos ?? -1) || a.nome.localeCompare(b.nome, "pt-BR"));
 
   const s = eObj(dados.s) ? dados.s : {};
   const e = eObj(dados.e) ? dados.e : {};

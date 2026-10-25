@@ -144,3 +144,17 @@ test("navegação por teclado alcança o botão atualizar", async ({ page, isMob
   }
   throw new Error("botão atualizar não recebeu foco por Tab");
 });
+
+test("antes da apuração (0 seções) avisa que a apuração não começou e não indica eleito", async ({ page }) => {
+  await simular(page, resultado({
+    candidatos: [
+      { numero: "98", nome: "CANDIDATO SIMULADO B", partido: "PSIM", votos: 0, percentualFonte: 0, percentualCalculado: null, situacao: null, eleito: false },
+      { numero: "99", nome: "CANDIDATO SIMULADO A", partido: "PTST", votos: 0, percentualFonte: 0, percentualCalculado: null, situacao: null, eleito: false },
+    ],
+    totalizacao: { secoesTotal: 1000, secoesTotalizadas: 0, percentualSecoesTotalizadas: 0, atualizadoEmFonte: null, finalizada: false },
+  }));
+  await page.goto("/");
+  await expect(page.getByText("Apuração ainda não começou")).toBeVisible();
+  await expect(page.getByTestId("candidato").first()).toContainText("CANDIDATO SIMULADO A");
+  await expect(page.getByTestId("selo-eleito")).toHaveCount(0);
+});

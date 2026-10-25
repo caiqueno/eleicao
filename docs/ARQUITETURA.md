@@ -34,7 +34,7 @@ A interface só conhece o formato normalizado de `src/lib/tipos.ts`. Os detalhes
 - **Eleito:** só quando o candidato vem com `e = "s"`. **Totalização encerrada:** só com `and = "f"` e 100% das seções.
 - **Percentuais:** usa o percentual do TSE (`pvapn`). O calculado (votos ÷ soma dos votos dos candidatos) só aparece,
   rotulado "calculado", quando o TSE não informa.
-- **Ordenação:** por votos, decrescente; empate pelo número do candidato.
+- **Ordenação:** por votos, decrescente; empate em ordem alfabética do nome (o que acontece antes do início da apuração, com todos em 0 votos).
 
 ## Atualização e cache
 
