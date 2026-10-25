@@ -1691,3 +1691,50 @@ a {
   justify-content: center;
   gap: 8px;
 }
+
+/* Resumo do boletim abaixo do placar: só no celular, onde o boletim fica depois do mapa. */
+.resumo-boletim {
+  display: none;
+}
+.boletim__seguir {
+  margin-top: 8px;
+  width: 100%;
+  justify-content: center;
+  border: 1.5px solid #1f8f4e;
+  border-radius: 8px;
+  background: transparent;
+  color: #17683a;
+  font-size: 14px;
+}
+@media (max-width: 760px) {
+  .resumo-boletim {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    margin-top: 8px;
+    padding: 10px 14px;
+    border: 1px solid var(--borda);
+    border-radius: 14px;
+    background: var(--painel);
+    color: var(--suave);
+    font-size: 13.5px;
+    text-decoration: none;
+  }
+  .resumo-boletim b {
+    color: var(--texto);
+    font-variant-numeric: tabular-nums;
+  }
+  .resumo-boletim i {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    vertical-align: baseline;
+  }
+  .resumo-boletim__ver {
+    margin-left: auto;
+    color: var(--texto);
+    font-weight: 700;
+  }
+}

@@ -90,7 +90,7 @@ test("patrocínio: oferta clara, sem preço inventado, abre o WhatsApp em nova a
 
 test("siga para a próxima eleição abre o contato em nova aba", async ({ page }) => {
   await abrir(page, ANTES, false);
-  const link = page.getByTestId("seguir");
+  const link = page.locator(".rodape").getByTestId("seguir");
   await expect(link).toHaveText(/Siga para a próxima eleição/);
   await expect(link).toHaveAttribute("href", /^https:\/\/wa\.me\/5511944650268\?text=/);
   await expect(link).toHaveAttribute("target", "_blank");
@@ -199,4 +199,16 @@ test("compartilhar: opções com os ícones dos aplicativos", async ({ page }, i
   await expect(janela.locator("svg.icone-app")).toHaveCount(await janela.locator("button").count() - 1);
   await expect(janela).toContainText("Instagram Stories");
   if (process.env.CAPTURAS) await page.screenshot({ path: `${process.env.CAPTURAS}/${info.project.name}-compartilhar.png` });
+});
+
+test("resumo do boletim abaixo do placar só no celular, e seguir dentro do boletim", async ({ page }, info) => {
+  await abrir(page, "2026-10-25T19:30:00-03:00", true);
+  const resumo = page.getByTestId("resumo-boletim");
+  if (info.project.name === "celular") {
+    await expect(resumo).toBeVisible();
+    await expect(resumo).toContainText("640.000");
+  } else {
+    await expect(resumo).toBeHidden();
+  }
+  await expect(page.getByTestId("boletim").getByTestId("seguir")).toBeVisible();
 });
