@@ -167,13 +167,15 @@ export async function simularApi(page: Page, apurando: boolean, pessoas: number 
     if (url.pathname === "/api/presenca") return rota.fulfill({ json: { agora: pessoas, hoje: pessoas === null ? null : hoje } });
     if (url.pathname === "/api/mensagem") return rota.fulfill({ json: { ok: true } });
     if (url.pathname === "/api/chat" && rota.request().method() === "POST") {
-      const { apelido, texto } = rota.request().postDataJSON() as { apelido?: string; texto: string };
-      return rota.fulfill({ json: { mensagem: { id: "00000000-0000-4000-8000-000000000002", em: "2026-10-25T22:31:00.000Z", apelido: apelido || "Visitante", texto } } });
+      const { apelido, texto, gif } = rota.request().postDataJSON() as { apelido?: string; texto: string; gif?: string };
+      const id = gif ? "00000000-0000-4000-8000-000000000003" : "00000000-0000-4000-8000-000000000002";
+      return rota.fulfill({ json: { mensagem: { id, em: "2026-10-25T22:31:00.000Z", apelido: apelido || "Visitante", texto, ...(gif ? { gif } : {}) } } });
     }
     if (url.pathname === "/api/chat") {
       return rota.fulfill({ json: { mensagens: [{ id: "00000000-0000-4000-8000-000000000001", em: "2026-10-25T22:20:00.000Z", apelido: "Ana", texto: "<b>apuração</b> andando rápido" }] } });
     }
     if (url.pathname === "/api/chat/denuncia") return rota.fulfill({ json: { ok: true } });
+    if (url.pathname === "/api/gif") return rota.fulfill({ json: { gifs: [{ id: "AbC123xyz", r: 1.5 }, { id: "Xyz987abc", r: 1 }] } });
     if (url.pathname === "/api/foto") return rota.fulfill({ status: 404, body: "" });
     return rota.fulfill({ status: 404, json: { erro: "não simulado" } });
   });

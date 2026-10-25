@@ -291,3 +291,30 @@ test("bate-papo: aba estilo MSN abre a janela, regras visíveis, texto sem HTML,
   await expect(page.getByTestId("chat-novas")).toHaveCount(0);
   expect(erros).toEqual([]);
 });
+
+test("bate-papo: mensagens novas aparecem sozinhas e dá para mandar GIF", async ({ page }) => {
+  const { erros } = await abrir(page, DURANTE, true);
+  const base = { id: "00000000-0000-4000-8000-000000000001", em: "2026-10-25T22:20:00.000Z", apelido: "Ana", texto: "primeira" };
+  let novas = false;
+  await page.route("**/api/chat", (rota) => {
+    if (rota.request().method() !== "GET") return rota.fallback();
+    const extra = { id: "00000000-0000-4000-8000-000000000009", em: "2026-10-25T22:25:00.000Z", apelido: "Rui", texto: "chegou sem recarregar" };
+    return rota.fulfill({ json: { mensagens: novas ? [extra, base] : [base] } });
+  });
+  await page.getByTestId("chat-aba").click();
+  const lista = page.getByTestId("chat-lista");
+  await expect(lista).toContainText("primeira");
+  novas = true;
+  await expect(lista).toContainText("chegou sem recarregar", { timeout: 8000 });
+
+  await page.getByTestId("chat-gif-botao").click();
+  const painel = page.getByTestId("chat-gifs");
+  await expect(painel).toContainText("Powered by GIPHY");
+  const img = painel.locator("img").first();
+  await expect(img).toHaveAttribute("src", "https://media.giphy.com/media/AbC123xyz/200w.webp");
+  await painel.getByRole("button", { name: "Enviar este GIF" }).first().click();
+  const gif = page.getByTestId("chat-gif").last();
+  await expect(gif).toHaveAttribute("src", "https://media.giphy.com/media/AbC123xyz/200w.webp");
+  await expect(page.getByTestId("chat-gifs")).toHaveCount(0);
+  expect(erros).toEqual([]);
+});

@@ -14,6 +14,7 @@ interface Comentario {
   em: string;
   apelido: string;
   texto: string;
+  gif?: string;
   oculta: boolean;
   denuncias: number;
 }
@@ -120,7 +121,11 @@ export function CaixaDeEntrada() {
                     {c.denuncias > 0 ? ` · ${c.denuncias} denúncia${c.denuncias > 1 ? "s" : ""}` : ""}
                   </span>
                 </div>
-                <p>{c.texto}</p>
+                {c.texto && <p>{c.texto}</p>}
+                {c.gif && /^[A-Za-z0-9]{5,40}$/.test(c.gif) && (
+                  // eslint-disable-next-line @next/next/no-img-element -- GIF do GIPHY, para a moderação ver o que foi enviado
+                  <img src={`https://media.giphy.com/media/${c.gif}/200w.webp`} alt="GIF enviado" width={160} referrerPolicy="no-referrer" />
+                )}
                 <div className="inbox__acoes">
                   {c.oculta ? (
                     <button type="button" onClick={() => void moderar("mostrar", c.id)}>

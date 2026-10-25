@@ -5,21 +5,35 @@ import { idDoNavegador } from "./hooks";
 
 const MAX_TEXTO = 280;
 const MAX_APELIDO = 24;
-const INTERVALO_ABERTO_MS = 15_000;
-const INTERVALO_FECHADO_MS = 60_000;
+/** Janela aberta: consulta a cada 3 s (a lista vem da CDN, guardada por 2 s). Minimizada: a cada 20 s, para o contador de novas. */
+const INTERVALO_ABERTO_MS = 3_000;
+const INTERVALO_FECHADO_MS = 20_000;
+const INTERVALO_MAX_ERRO_MS = 30_000;
 
 interface MensagemChat {
   id: string;
   em: string;
   apelido: string;
   texto: string;
+  gif?: string;
 }
+
+interface Gif {
+  id: string;
+  r: number;
+}
+
+/** Só ids do GIPHY chegam aqui; a imagem vem sempre do endereço fixo do GIPHY. */
+const urlGif = (id: string) => `https://media.giphy.com/media/${encodeURIComponent(id)}/200w.webp`;
 
 const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 
 /** Cor fixa por apelido, como os nomes coloridos do MSN. */
 const CORES_APELIDO = ["#2f80ed", "#9b51e0", "#27ae60", "#e67e22", "#eb5757", "#00a3a3", "#c0399f", "#7a8a00"];
 const corDe = (s: string) => CORES_APELIDO[[...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % CORES_APELIDO.length];
+
+/** Ids em ordem: se não mudou, a lista não é trocada (nada pisca nem rola à toa). */
+const assinatura = (l: MensagemChat[]) => l.map((m) => m.id).join(",");
 
 function lerLocal<T>(chave: string, padrao: T): T {
   if (typeof window === "undefined") return padrao;
@@ -61,30 +75,75 @@ export function Chat({ online }: { online: number | null }) {
   const fundo = useRef<HTMLDivElement>(null);
   const campo = useRef<HTMLTextAreaElement>(null);
 
-  // Busca ao abrir a página e depois a cada 15 s (janela aberta) ou 60 s (minimizada), só com a aba visível.
+  // Mensagens novas aparecem sozinhas: consulta a cada 3 s com a janela aberta e 20 s minimizada,
+  // só com a aba visível; em erro, espera cada vez mais (até 30 s). Voltar para a aba consulta na hora.
+  const [rodada, setRodada] = useState(0);
   useEffect(() => {
     let vivo = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let espera = aberta ? INTERVALO_ABERTO_MS : INTERVALO_FECHADO_MS;
+    const base = espera;
     const buscar = async () => {
-      if (document.visibilityState === "hidden") return;
-      try {
-        const r = await fetch("/api/chat");
-        const j = (await r.json()) as { mensagens?: MensagemChat[] };
-        if (!r.ok || !Array.isArray(j.mensagens)) throw new Error();
-        if (!vivo) return;
-        setLista(j.mensagens);
-        setIndisponivel(false);
-      } catch {
-        if (vivo) setIndisponivel(true);
+      if (document.visibilityState !== "hidden") {
+        try {
+          const r = await fetch("/api/chat");
+          const j = (await r.json()) as { mensagens?: MensagemChat[] };
+          if (!r.ok || !Array.isArray(j.mensagens)) throw new Error();
+          if (!vivo) return;
+          const novaLista = j.mensagens;
+          setLista((antes) => (antes && assinatura(antes) === assinatura(novaLista) ? antes : novaLista));
+          setIndisponivel(false);
+          espera = base;
+        } catch {
+          if (!vivo) return;
+          setIndisponivel(true);
+          espera = Math.min(espera * 2, INTERVALO_MAX_ERRO_MS);
+        }
       }
+      if (vivo) timer = setTimeout(() => void buscar(), espera);
     };
-    const primeira = setTimeout(() => void buscar(), aberta ? 0 : 300);
-    const t = setInterval(() => void buscar(), aberta ? INTERVALO_ABERTO_MS : INTERVALO_FECHADO_MS);
+    timer = setTimeout(() => void buscar(), aberta ? 0 : 300);
+    const aoVoltar = () => {
+      if (document.visibilityState !== "visible" || !vivo) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => void buscar(), 0);
+    };
+    document.addEventListener("visibilitychange", aoVoltar);
     return () => {
       vivo = false;
-      clearTimeout(primeira);
-      clearInterval(t);
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", aoVoltar);
     };
-  }, [aberta]);
+  }, [aberta, rodada]);
+
+  // GIFs: só aparecem se o servidor tiver o GIPHY configurado.
+  const [gifsAtivos, setGifsAtivos] = useState(false);
+  const [escolhendoGif, setEscolhendoGif] = useState(false);
+  const [buscaGif, setBuscaGif] = useState("");
+  const [gifs, setGifs] = useState<Gif[] | null>(null);
+  useEffect(() => {
+    if (!aberta) return;
+    let vivo = true;
+    const termo = escolhendoGif ? buscaGif.trim() : "";
+    const t = setTimeout(
+      async () => {
+        try {
+          const r = await fetch(`/api/gif?q=${encodeURIComponent(termo)}`);
+          const j = (await r.json()) as { gifs?: Gif[] };
+          if (!vivo) return;
+          setGifsAtivos(r.ok && Array.isArray(j.gifs));
+          if (Array.isArray(j.gifs)) setGifs(j.gifs);
+        } catch {
+          if (vivo) setGifsAtivos(false);
+        }
+      },
+      termo ? 400 : 0,
+    );
+    return () => {
+      vivo = false;
+      clearTimeout(t);
+    };
+  }, [aberta, escolhendoGif, buscaGif]);
 
   // A API manda as mais novas primeiro; a janela mostra como conversa (as mais novas embaixo).
   const ids = new Set((lista ?? []).map((m) => m.id));
@@ -116,9 +175,9 @@ export function Chat({ online }: { online: number | null }) {
     return () => window.removeEventListener("keydown", esc);
   }, [aberta]);
 
-  const enviar = async (e?: React.FormEvent<HTMLFormElement>) => {
+  const enviar = async (e?: React.FormEvent<HTMLFormElement>, gif?: string) => {
     e?.preventDefault();
-    if (enviando || texto.trim().length < 2) return;
+    if (enviando || (!gif && texto.trim().length < 2)) return;
     setErro(null);
     setEnviando(true);
     const site = (document.querySelector<HTMLInputElement>(".chat-janela input[name=site]")?.value ?? "").trim();
@@ -126,7 +185,7 @@ export function Chat({ online }: { online: number | null }) {
       const r = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apelido, texto, aparelho: idDoNavegador(), site }),
+        body: JSON.stringify({ apelido, texto: gif ? texto.trim() : texto, aparelho: idDoNavegador(), site, ...(gif ? { gif } : {}) }),
       });
       const j = (await r.json().catch(() => ({}))) as { mensagem?: MensagemChat; erro?: string };
       if (!r.ok || !j.mensagem) throw new Error(j.erro ?? "Não foi possível enviar agora");
@@ -138,6 +197,9 @@ export function Chat({ online }: { online: number | null }) {
         return n;
       });
       setTexto("");
+      setEscolhendoGif(false);
+      setBuscaGif("");
+      setRodada((n) => n + 1);
       gravarLocal("av:apelido", apelido);
       campo.current?.focus();
     } catch (x) {
@@ -232,11 +294,47 @@ export function Chat({ online }: { online: number | null }) {
                   </button>
                 )}
               </div>
-              <p className="chat-msg__balao">{m.texto}</p>
+              {m.texto && <p className="chat-msg__balao">{m.texto}</p>}
+              {m.gif && /^[A-Za-z0-9]{5,40}$/.test(m.gif) && (
+                // eslint-disable-next-line @next/next/no-img-element -- GIF animado servido pelo GIPHY
+                <img className="chat-msg__gif" src={urlGif(m.gif)} alt="GIF" loading="lazy" width={200} referrerPolicy="no-referrer" data-testid="chat-gif" />
+              )}
             </div>
           );
         })}
       </div>
+
+      {escolhendoGif && gifsAtivos && (
+        <div className="chat-gifs" data-testid="chat-gifs">
+          <input
+            className="chat-gifs__busca"
+            aria-label="Buscar GIF"
+            placeholder="Buscar GIF…"
+            value={buscaGif}
+            onChange={(e) => setBuscaGif(e.target.value)}
+            maxLength={50}
+            autoFocus
+          />
+          <div className="chat-gifs__grade">
+            {(gifs ?? []).map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                className="chat-gifs__item"
+                onClick={() => void enviar(undefined, g.id)}
+                disabled={enviando}
+                aria-label="Enviar este GIF"
+                style={{ aspectRatio: String(g.r || 1) }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- GIF animado servido pelo GIPHY */}
+                <img src={urlGif(g.id)} alt="" loading="lazy" referrerPolicy="no-referrer" />
+              </button>
+            ))}
+            {gifs && gifs.length === 0 && <p className="chat-janela__aviso">Nenhum GIF encontrado.</p>}
+          </div>
+          <small className="chat-gifs__giphy">Powered by GIPHY</small>
+        </div>
+      )}
 
       <form className="chat-janela__envio" onSubmit={enviar}>
         <div className="chat-janela__eu">
@@ -278,6 +376,18 @@ export function Chat({ online }: { online: number | null }) {
             maxLength={MAX_TEXTO}
             rows={2}
           />
+          {gifsAtivos && (
+            <button
+              type="button"
+              className={`chat-janela__gifbtn${escolhendoGif ? " chat-janela__gifbtn--ativo" : ""}`}
+              onClick={() => setEscolhendoGif((v) => !v)}
+              aria-pressed={escolhendoGif}
+              aria-label="Escolher GIF"
+              data-testid="chat-gif-botao"
+            >
+              GIF
+            </button>
+          )}
           <button type="submit" className="chat-janela__enviar" disabled={enviando || texto.trim().length < 2} data-testid="chat-enviar">
             {enviando ? "…" : "Enviar"}
           </button>

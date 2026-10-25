@@ -1,11 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { lerChat, publicarChat, validarChat } from "@/lib/chat";
+import { gifPermitido } from "@/lib/giphy";
 
 export const dynamic = "force-dynamic";
 
 const SEM_CACHE = { "Cache-Control": "no-store" };
-/** A CDN guarda a lista por 5 s: no pico, o Redis recebe poucas leituras, não uma por visitante. */
-const CACHE_LISTA = { "Cache-Control": "public, max-age=0, s-maxage=5, stale-while-revalidate=10" };
+/**
+ * A CDN guarda a lista por 2 s: a janela aberta consulta a cada 3 s e as mensagens novas aparecem
+ * quase na hora, mas no pico o Redis recebe no máximo uma leitura a cada 2 s, não uma por visitante.
+ */
+const CACHE_LISTA = { "Cache-Control": "public, max-age=0, s-maxage=2, stale-while-revalidate=2" };
 
 const ERROS = {
   espere: [429, "Espere alguns segundos antes de mandar outro comentário."],
@@ -33,7 +37,8 @@ export async function POST(req: NextRequest) {
   const v = validarChat(corpo);
   if (!v.ok) return NextResponse.json({ erro: v.erro }, { status: 400, headers: SEM_CACHE });
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "?";
-  const r = await publicarChat({ apelido: v.apelido, texto: v.texto, aparelho: v.aparelho, ip });
+  if (v.gif && !(await gifPermitido(v.gif))) return NextResponse.json({ erro: "Esse GIF não pode ser usado" }, { status: 400, headers: SEM_CACHE });
+  const r = await publicarChat({ apelido: v.apelido, texto: v.texto, aparelho: v.aparelho, ip, gif: v.gif });
   if (!r.ok) {
     const [status, erro] = ERROS[r.motivo];
     return NextResponse.json({ erro }, { status, headers: SEM_CACHE });
