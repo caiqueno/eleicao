@@ -3,7 +3,7 @@
  * Nenhum dado aqui é resultado real.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { simularApi } from "./simulacao";
+import { resultadoBr, simularApi } from "./simulacao";
 
 const ANTES = "2026-10-25T11:30:00-03:00";
 const DURANTE = "2026-10-25T19:30:00-03:00";
@@ -370,5 +370,24 @@ test("bate-papo: mensagens novas aparecem sozinhas e dá para mandar GIF", async
   const gif = page.getByTestId("chat-gif").last();
   await expect(gif).toHaveAttribute("src", "https://media.giphy.com/media/AbC123xyz/200w.webp");
   await expect(page.getByTestId("chat-gifs")).toHaveCount(0);
+  expect(erros).toEqual([]);
+});
+
+test("vencedor: foto em destaque só quando o TSE marca eleito", async ({ page }) => {
+  const { erros } = await abrir(page, DURANTE, true);
+  // Durante a apuração: só "à frente", sem vencedor.
+  await expect(page.getByTestId("anuncio")).toContainText("está à frente");
+  await expect(page.getByTestId("vencedor")).toHaveCount(0);
+
+  const final = resultadoBr(true);
+  final.resultado.candidatos[1] = { ...final.resultado.candidatos[1], eleito: true, situacao: "Eleito" as unknown as null };
+  final.resultado.totalizacao = { ...final.resultado.totalizacao, secoesTotalizadas: 499248, percentualSecoesTotalizadas: 100, finalizada: true };
+  await page.route("**/api/resultados**", (rota) => rota.fulfill({ json: final }));
+  await page.reload();
+  const vencedor = page.getByTestId("vencedor");
+  await expect(vencedor).toBeVisible();
+  await expect(vencedor).toContainText("venceu o 2º turno para Presidente, segundo o TSE");
+  await expect(vencedor.locator(".foto")).toHaveCount(1);
+  await expect(page.getByTestId("anuncio")).toHaveCount(0);
   expect(erros).toEqual([]);
 });
