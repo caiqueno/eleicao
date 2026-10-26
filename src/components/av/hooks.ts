@@ -250,15 +250,18 @@ export function idDoNavegador(): string {
 export interface ContagemPresenca {
   agora: number | null;
   hoje: number | null;
+  total: number | null;
 }
 
 const numero = (n: unknown) => (typeof n === "number" && Number.isFinite(n) && n >= 0 ? n : null);
 
 export function usePresenca(intervaloS = 45): ContagemPresenca {
-  const [contagem, setContagem] = useState<ContagemPresenca>({ agora: null, hoje: null });
+  const [contagem, setContagem] = useState<ContagemPresenca>({ agora: null, hoje: null, total: null });
   useEffect(() => {
     const id = idDoNavegador();
     let vivo = true;
+    // Só o primeiro sinal desta abertura conta como visita.
+    let visita = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const enviar = async () => {
       if (timer) clearTimeout(timer);
@@ -267,11 +270,12 @@ export function usePresenca(intervaloS = 45): ContagemPresenca {
           const r = await fetch("/api/presenca", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id }),
+            body: JSON.stringify(visita ? { id, visita: true } : { id }),
             cache: "no-store",
           });
-          const j = (await r.json()) as { agora?: unknown; hoje?: unknown };
-          if (vivo && r.ok) setContagem({ agora: numero(j.agora), hoje: numero(j.hoje) });
+          const j = (await r.json()) as { agora?: unknown; hoje?: unknown; total?: unknown };
+          if (r.ok) visita = false;
+          if (vivo && r.ok) setContagem({ agora: numero(j.agora), hoje: numero(j.hoje), total: numero(j.total) });
         } catch {
           /* sem conexão: mantém o último número */
         }

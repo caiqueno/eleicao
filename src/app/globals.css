@@ -1468,6 +1468,11 @@ a.plano,
   font-size: 13px;
   color: var(--texto);
   white-space: nowrap;
+  /* Com o total de visitas, em tela estreita os números quebram em mais de uma linha. */
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 4px;
+  max-width: 100%;
 }
 .presenca__agora {
   display: inline-flex;

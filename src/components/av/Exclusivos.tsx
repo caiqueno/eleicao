@@ -318,9 +318,11 @@ export function ResumoBoletim(p: PropsResumo) {
 export function Presenca({
   agora,
   hoje,
+  total,
 }: {
   agora: number | null;
   hoje: number | null;
+  total?: number | null;
 }) {
   if (agora === null) return null;
   return (
@@ -348,6 +350,11 @@ export function Presenca({
           title="Aparelhos diferentes que abriram o site hoje (horário de Brasília)"
         >
           <b data-testid="presenca-hoje">{inteiro(hoje)}</b> hoje
+        </span>
+      )}
+      {total !== null && total !== undefined && (
+        <span className="presenca__hoje" title="Total de vezes que o site foi aberto desde que o contador foi ligado">
+          <b data-testid="presenca-total">{inteiro(total)}</b> {total === 1 ? "visita" : "visitas"} no total
         </span>
       )}
     </div>

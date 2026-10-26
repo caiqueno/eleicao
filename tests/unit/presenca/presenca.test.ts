@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { aceitarId, configRedis, diaBrasilia, idValido, JANELA_MS, limparPresenca, registrarSinal } from "@/lib/presenca";
+import { aceitarId, configRedis, diaBrasilia, idValido, INTERVALO_VISITA_S, JANELA_MS, limparPresenca, registrarSinal } from "@/lib/presenca";
 import { liderancas, textoWhatsapp, viradas } from "@/components/av/Exclusivos";
 import type { AreaMapa } from "@/lib/tse/mapa";
 
@@ -45,10 +45,10 @@ describe("sinal de presença", () => {
     const agora = Date.parse("2026-10-25T22:00:00Z");
     const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
       const cmds = JSON.parse(String(init?.body)) as unknown[][];
-      return new Response(JSON.stringify(cmds.map((c) => ({ result: c[0] === "ZCARD" ? 7 : c[0] === "SCARD" ? 90 : 1 }))));
+      return new Response(JSON.stringify(cmds.map((c) => ({ result: c[0] === "ZCARD" ? 7 : c[0] === "SCARD" ? 90 : c[0] === "GET" ? "1500" : 1 }))));
     });
     const n = await registrarSinal(ID, { cfg: CFG, agora, fetchImpl: fetchImpl as unknown as typeof fetch });
-    expect(n).toEqual({ agora: 7, hoje: 90 });
+    expect(n).toEqual({ agora: 7, hoje: 90, total: 1500 });
     const [url, init] = fetchImpl.mock.calls[0];
     expect(url).toBe("https://exemplo.upstash.io/pipeline");
     expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer t");
@@ -60,9 +60,10 @@ describe("sinal de presença", () => {
       ["PEXPIRE", "av:presenca", JANELA_MS * 3],
       ["SCARD", "av:dia:2026-10-25"],
       ["EXPIRE", "av:dia:2026-10-25", 3 * 24 * 3600],
+      ["GET", "av:visitas"],
     ]);
     // Dentro de 5 s, só grava e reaproveita a contagem.
-    expect(await registrarSinal(ID, { cfg: CFG, agora: agora + 2_000, fetchImpl: fetchImpl as unknown as typeof fetch })).toEqual({ agora: 7, hoje: 90 });
+    expect(await registrarSinal(ID, { cfg: CFG, agora: agora + 2_000, fetchImpl: fetchImpl as unknown as typeof fetch })).toEqual({ agora: 7, hoje: 90, total: 1500 });
     expect(JSON.parse(String(fetchImpl.mock.calls[1][1]?.body))).toHaveLength(2);
   });
 
@@ -71,11 +72,27 @@ describe("sinal de presença", () => {
       const cmds = JSON.parse(String(init?.body)) as unknown[][];
       return new Response(JSON.stringify(cmds.map((c) => ({ result: c[0] === "ZCARD" ? 12 : c[0] === "SCARD" ? 3 : 1 }))));
     });
-    expect(await registrarSinal(ID, { cfg: CFG, agora: 5_000_000, fetchImpl: fetchImpl as unknown as typeof fetch })).toEqual({ agora: 12, hoje: 12 });
+    expect(await registrarSinal(ID, { cfg: CFG, agora: 5_000_000, fetchImpl: fetchImpl as unknown as typeof fetch })).toEqual({ agora: 12, hoje: 12, total: 1 });
+  });
+
+  it("a abertura da página soma uma visita; os sinais seguintes não somam", async () => {
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const cmds = JSON.parse(String(init?.body)) as unknown[][];
+      return new Response(JSON.stringify(cmds.map((c) => ({ result: c[0] === "EVAL" ? 42 : c[0] === "GET" ? "42" : 3 }))));
+    });
+    const f = fetchImpl as unknown as typeof fetch;
+    expect(await registrarSinal(ID, { cfg: CFG, agora: 9_000_000, fetchImpl: f, visita: true })).toEqual({ agora: 3, hoje: 3, total: 42 });
+    const cmds = JSON.parse(String(fetchImpl.mock.calls[0][1]?.body)) as unknown[][];
+    const evalCmd = cmds.find((c) => c[0] === "EVAL")!;
+    expect(evalCmd.slice(2)).toEqual([2, `av:v:${ID}`, "av:visitas", INTERVALO_VISITA_S]);
+    expect(cmds.some((c) => c[0] === "INCR")).toBe(false);
+    // Sinal seguinte (sem visita) dentro de 5 s: nem EVAL nem INCR, só grava presença.
+    await registrarSinal(ID, { cfg: CFG, agora: 9_002_000, fetchImpl: f });
+    expect(JSON.parse(String(fetchImpl.mock.calls[1][1]?.body))).toHaveLength(2);
   });
 
   it("sem configuração ou com erro do Redis, devolve null (nada inventado)", async () => {
-    const vazia = { agora: null, hoje: null };
+    const vazia = { agora: null, hoje: null, total: null };
     expect(await registrarSinal(ID, { cfg: null })).toEqual(vazia);
     const falha = vi.fn(async () => new Response("x", { status: 500 }));
     expect(await registrarSinal(ID, { cfg: CFG, fetchImpl: falha as unknown as typeof fetch })).toEqual(vazia);
@@ -114,6 +131,6 @@ describe("rota /api/presenca", () => {
     expect((await POST(req("nao-json"))).status).toBe(400);
     const ok = await POST(req(JSON.stringify({ id: ID })));
     expect(ok.status).toBe(200);
-    expect(await ok.json()).toEqual({ agora: null, hoje: null });
+    expect(await ok.json()).toEqual({ agora: null, hoje: null, total: null });
   });
 });
