@@ -141,6 +141,12 @@ test("contador de pessoas: aparece com número e some quando indisponível", asy
   await expect(contador).toContainText("pessoas acompanhando agora");
   await expect(page.getByTestId("presenca-hoje")).toHaveText("56.789");
   await expect(contador).toContainText("hoje");
+  await expect(page.getByTestId("presenca-total")).toHaveText("123.456");
+  await expect(contador).toContainText("visitas no total");
+  // Cabe na largura da tela (no celular quebra em linhas, sem rolagem lateral).
+  const caixa = await contador.boundingBox();
+  expect(caixa!.x + caixa!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await expect(page.getByText(/tempo real/i)).toHaveCount(0);
 });
 

@@ -8,6 +8,11 @@
  * Brasília) para contar quantos aparelhos diferentes abriram o site hoje; esse
  * conjunto expira sozinho em 3 dias. Não guarda IP, nome nem nada que identifique a pessoa.
  *
+ * O total de visitas é um contador único que sobe uma vez por abertura da
+ * página (o primeiro sinal de cada carregamento), nunca nos sinais seguintes.
+ * Para que apertar F5 sem parar não infle o número, o mesmo id só soma de novo
+ * depois de INTERVALO_VISITA_S.
+ *
  * Sem as variáveis do Upstash configuradas na Vercel, o contador fica
  * indisponível e a tela não mostra número nenhum.
  */
@@ -17,6 +22,13 @@ export const INTERVALO_SINAL_S = 45;
 const CHAVE = "av:presenca";
 const PREFIXO_DIA = "av:dia:";
 const EXPIRA_DIA_S = 3 * 24 * 3600;
+const CHAVE_TOTAL = "av:visitas";
+const PREFIXO_VISITA = "av:v:";
+export const INTERVALO_VISITA_S = 300;
+/** Soma a visita só se este id não somou nos últimos ARGV[1] segundos; devolve o total. */
+const SCRIPT_VISITA =
+  "if redis.call('SET', KEYS[1], '1', 'NX', 'EX', ARGV[1]) then return redis.call('INCR', KEYS[2]) end " +
+  "return tonumber(redis.call('GET', KEYS[2]) or '0')";
 /** Limpeza dos sinais vencidos e leitura da contagem: no máximo uma vez a cada 5 s por instância. */
 const INTERVALO_CONTAGEM_MS = 5_000;
 /** Ids novos aceitos por IP por minuto, por instância (evita inflar o número com ids inventados). */
@@ -54,9 +66,11 @@ export interface Contagem {
   agora: number | null;
   /** Aparelhos diferentes que abriram o site hoje (horário de Brasília). */
   hoje: number | null;
+  /** Total de visitas desde que o contador foi ligado. */
+  total: number | null;
 }
 
-const VAZIA: Contagem = { agora: null, hoje: null };
+const VAZIA: Contagem = { agora: null, hoje: null, total: null };
 const contagemValida = (n: unknown): number | null => {
   const v = Number(n);
   return Number.isFinite(v) && v >= 0 ? v : null;
@@ -93,10 +107,10 @@ export async function pipeline(cfg: ConfigRedis, comandos: (string | number)[][]
   return corpo.map((c) => c.result);
 }
 
-/** Registra o sinal e devolve as contagens de agora e de hoje (null onde estiver indisponível). */
+/** Registra o sinal e devolve as contagens de agora, de hoje e o total (null onde estiver indisponível). */
 export async function registrarSinal(
   id: string,
-  opcoes: { cfg?: ConfigRedis | null; agora?: number; fetchImpl?: typeof fetch } = {},
+  opcoes: { cfg?: ConfigRedis | null; agora?: number; fetchImpl?: typeof fetch; visita?: boolean } = {},
 ): Promise<Contagem> {
   const cfg = opcoes.cfg === undefined ? configRedis() : opcoes.cfg;
   if (!cfg) return VAZIA;
@@ -116,17 +130,26 @@ export async function registrarSinal(
       ["EXPIRE", dia, EXPIRA_DIA_S],
     );
   }
+  const iTotal = opcoes.visita || contar ? comandos.length : -1;
+  if (opcoes.visita) comandos.push(["EVAL", SCRIPT_VISITA, 2, PREFIXO_VISITA + id, CHAVE_TOTAL, INTERVALO_VISITA_S]);
+  else if (contar) comandos.push(["GET", CHAVE_TOTAL]);
   try {
     const res = await pipeline(cfg, comandos, opcoes.fetchImpl ?? fetch);
+    const total = iTotal >= 0 ? contagemValida(res[iTotal]) : (ultimaContagem?.valor.total ?? null);
     if (contar) {
-      const valor = { agora: contagemValida(res[3]), hoje: contagemValida(res[5]) };
+      const valor = { agora: contagemValida(res[3]), hoje: contagemValida(res[5]), total };
       if (valor.agora === null) return VAZIA;
       // Quem está aqui agora também abriu hoje: "hoje" nunca fica abaixo de "agora".
       if (valor.hoje !== null && valor.hoje < valor.agora) valor.hoje = valor.agora;
       ultimaContagem = { em: agora, valor };
+    } else if (ultimaContagem && total !== null) {
+      // O total não volta para trás, mesmo vindo de instâncias com leituras em momentos diferentes.
+      ultimaContagem.valor = { ...ultimaContagem.valor, total: Math.max(total, ultimaContagem.valor.total ?? 0) };
     }
     return ultimaContagem?.valor ?? VAZIA;
   } catch {
+    // Se só a soma da visita falhou, a presença continua aparecendo.
+    if (opcoes.visita) return registrarSinal(id, { ...opcoes, visita: false });
     return VAZIA;
   }
 }

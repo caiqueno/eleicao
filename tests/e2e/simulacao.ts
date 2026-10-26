@@ -164,7 +164,7 @@ export async function simularApi(page: Page, apurando: boolean, pessoas: number 
     }
     if (url.pathname === "/api/primeiro-turno") return rota.fulfill({ json: primeiroTurno() });
     if (url.pathname === "/api/municipios") return rota.fulfill({ json: { municipios: [["sp", "10000", "3500105", "ADAMANTINA"], ["ba", "10001", "2900108", "ABAÍRA"]] } });
-    if (url.pathname === "/api/presenca") return rota.fulfill({ json: { agora: pessoas, hoje: pessoas === null ? null : hoje } });
+    if (url.pathname === "/api/presenca") return rota.fulfill({ json: { agora: pessoas, hoje: pessoas === null ? null : hoje, total: pessoas === null || hoje === null ? null : 123456 } });
     if (url.pathname === "/api/mensagem") return rota.fulfill({ json: { ok: true } });
     if (url.pathname === "/api/chat" && rota.request().method() === "POST") {
       const { apelido, texto, gif, resposta } = rota.request().postDataJSON() as { apelido?: string; texto: string; gif?: string; resposta?: string };
