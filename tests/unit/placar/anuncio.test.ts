@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import { anuncioDoPlacar } from "@/components/av/Placar";
 import type { ResultadoSegundoTurno } from "@/lib/tipos";
 
-function resultado(votos: [number, number], st: number, eleito: [boolean, boolean] = [false, false]): ResultadoSegundoTurno {
+function resultado(votos: [number, number], st: number, eleito: [boolean, boolean] = [false, false], pct = 42.5): ResultadoSegundoTurno {
   return {
     cargoNome: "Presidente",
     abrangenciaNome: "Bahia",
-    totalizacao: { secoesTotalizadas: st, percentualSecoesTotalizadas: st ? 42.5 : 0, finalizada: false },
+    totalizacao: { secoesTotalizadas: st, percentualSecoesTotalizadas: st ? pct : 0, finalizada: false },
     candidatos: [
       { numero: "22", nome: "BETA SILVA", votos: votos[1], eleito: eleito[1] },
       { numero: "13", nome: "ALFA SOUZA", votos: votos[0], eleito: eleito[0] },
@@ -40,5 +40,12 @@ describe("anuncioDoPlacar", () => {
 
   it("venceu só quando o TSE marca eleito, mesmo com o outro à frente nos votos parciais", () => {
     expect(anuncioDoPlacar(resultado([1000, 900], 10, [false, true]), "br")).toMatchObject({ tipo: "eleito", indice: 1 });
+  });
+
+  it("no fim da apuração sem eleito marcado, aguarda o TSE e não declara vencedor", () => {
+    const a = anuncioDoPlacar(resultado([1000, 900], 10, [false, false], 99.9996), "br")!;
+    expect(a).toMatchObject({ tipo: "frente", indice: 0 });
+    expect(a.texto).toContain("100,00% das seções apuradas · aguardando o TSE oficializar o resultado");
+    expect(a.texto).not.toMatch(/parcial|venc|eleit/i);
   });
 });

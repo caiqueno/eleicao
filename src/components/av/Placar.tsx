@@ -85,14 +85,17 @@ export function anuncioDoPlacar(resultado: ResultadoSegundoTurno, uf: string): A
   if ((t.secoesTotalizadas ?? 0) === 0 || cands.length !== 2) return null;
   const [va, vb] = cands.map((c) => c.votos ?? 0);
   const apuradas = `${pct2(t.percentualSecoesTotalizadas)} das seções apuradas`;
-  if (va === vb) return { tipo: "empate", texto: `Empate nos votos apurados até agora · resultado parcial, ${apuradas}` };
+  // Apuração no fim (ou encerrada) sem eleito marcado: quem decide é o TSE, não a contagem.
+  const noFim = t.finalizada || (t.percentualSecoesTotalizadas ?? 0) >= 99.99;
+  const situacao = noFim ? `${apuradas} · aguardando o TSE oficializar o resultado` : `resultado parcial, ${apuradas}`;
+  if (va === vb) return { tipo: "empate", texto: `Empate nos votos apurados até agora · ${situacao}` };
   const i = va > vb ? 0 : 1;
   const onde = uf === "br" ? "" : ` · ${resultado.abrangenciaNome}`;
   return {
     tipo: "frente",
     indice: i,
     nome: nomeCurto(cands[i].nome, true),
-    texto: `está à frente por ${inteiro(Math.abs(va - vb))} votos${onde} · resultado parcial, ${apuradas}`,
+    texto: `está à frente por ${inteiro(Math.abs(va - vb))} votos${onde} · ${situacao}`,
   };
 }
 
