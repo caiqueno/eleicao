@@ -123,13 +123,29 @@ export function Placar({ cargo, uf, resultado, agora, carregando }: Props) {
 
   return (
     <section className="placar" data-testid="placar" aria-label={`Placar de ${resultado.cargoNome}, ${resultado.abrangenciaNome}`}>
-      {anuncio && (
+      {anuncio?.tipo === "eleito" && (
+        // Só aparece quando o próprio TSE marca o candidato como eleito.
+        <div className="placar__vencedor" data-testid="vencedor" aria-live="polite">
+          <Foto cargo={cargo} uf={uf} c={cands[anuncio.indice]} cor={cores[anuncio.indice]} tam={112} />
+          <div className="placar__vencedorTexto">
+            <span className="selo-eleito">Eleito</span>
+            <strong>{anuncio.nome}</strong>
+            <span>{anuncio.texto}</span>
+            {cands[anuncio.indice].votos !== null && (
+              <small>
+                {pct2(cands[anuncio.indice].percentualFonte ?? (p ? p[anuncio.indice] : 0))} dos votos válidos · {inteiro(cands[anuncio.indice].votos)} votos
+              </small>
+            )}
+          </div>
+        </div>
+      )}
+      {anuncio && anuncio.tipo !== "eleito" && (
         <p className={`placar__anuncio placar__anuncio--${anuncio.tipo}`} data-testid="anuncio" aria-live="polite">
           {anuncio.tipo === "empate" ? (
             anuncio.texto
           ) : (
             <>
-              <b style={{ color: anuncio.tipo === "eleito" ? undefined : cores[anuncio.indice] }}>{anuncio.nome}</b> {anuncio.texto}
+              <b style={{ color: cores[anuncio.indice] }}>{anuncio.nome}</b> {anuncio.texto}
             </>
           )}
         </p>
